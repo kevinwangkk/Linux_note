@@ -1,6 +1,6 @@
 关键字：manual gcc    头文件的详细组成
 
-/*man 各章节*/
+/* man 各章节 */
 1 - commands
 2 - system calls
 3 - library calls
@@ -38,7 +38,7 @@ UC课程内容简介
 	7. Uinx/Linux系统下的网络编程技术；
 	8. Uinx/Linux系统下的多线程开发技术；
 
-/*Unix和Linux系统的简介*/
+/* Unix和Linux系统的简介 */
 Unix系统简介
 	Unix系统诞生于1970年，具有支持多用户多任务以及多种处理器的特性；
 Linux系统简介
@@ -46,7 +46,7 @@ Linux系统简介
 	当前环境：ubuntu12.04 32位的操作系统
 	ubuntu系统每半年发布一个新版本，分别是 4月 和 10月
 
-/*gcc编译器的使用*/
+/* gcc编译器的使用 */
 基本概念
 	gcc原名叫做GNU C Compiler(编译器)，支持对C语言的编译链接
 	后来对编译器进行了扩展，支持了更多的编程语言，如C++等等，改名为GNU Compiler Colection(集合)；
@@ -69,6 +69,7 @@ Linux系统简介
 	4. 链接
 		主要用于将目标文件和库文件进行链接，得到可执行文件；
 		（ a.out ）cc 01hello.o
+					cc 01hello.o -o hello  //得到hello可执行文件
 
 常用的编译选项
 	1. 熟练掌握的选项
@@ -123,7 +124,7 @@ Linux系统简介
 		}Node;
 
 		typedef struct
-		{	
+		{
 			Enum_Camera_Open_Type type; // 拍摄类型，照片or视频
     		Enum_DevState state; 		// 拍摄状态， busy，free， succ, fail,
     		uint record;				//记录时间
@@ -146,35 +147,4 @@ Linux系统简介
 	环境变量的概念和使用
 	库文件的概念和使用
 	
-
-
-
-
-
-
-
-
-	
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
