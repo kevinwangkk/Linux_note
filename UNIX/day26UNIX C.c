@@ -103,7 +103,7 @@ void print(const char *str)
 /etc/passwd - 主要包含了账户的管理信息；
 /etc/shadow - 主要包含了账户的密码以及管理信息；
 
-tarena:x:1000:1000:tarena,,,:/home/tarena:/bin/bash
+kevin:x:1000:1000:kevin,,,:/home/kevin:/bin/bash
 用户名：密码：用户编号：用户组编号：注释信息，，，：用户主目录：shell的类型
 
 
@@ -146,8 +146,8 @@ int main(void)
 	strerror:No such file or directory
 
 2. perror函数（重中之重）
-#include <stdio.h>
-void perror(const char *s);
+	#include <stdio.h>
+	void perror(const char *s);
 函数功能
 	主要用于打印具体的错误信息，参数指向的字符串会原样打印，紧跟着冒号,空格,错误信息以及自动换行；
 
@@ -180,7 +180,8 @@ int main(void)
 	printf("%m") - 打印错误信息
 
 注意：
-	不能直接使用errno的数值来作为判断函数是否出错的依据,因为errno会保留之前的错误编号，也会随时发生改变，因此判断函数是否出错还是依据函数的返回值，而只有明确函数已经出错的情况下，可以依据errno来获取错误的原因；
+	不能直接使用errno的数值来作为判断函数是否出错的依据,因为errno会保留之前的错误编号，也会随时发生改变，
+	因此判断函数是否出错还是依据函数的返回值，而只有明确函数已经出错的情况下，可以依据errno来获取错误的原因；
 
 
 /*环境表*/
@@ -188,7 +189,9 @@ int main(void)
 
 采用指针数组类型
 
-	环境表就是一个以空指针 NULL 作为结尾的字符指针数组，其中每个指针都指向一个格式为“变量名=变量值”的字符串，该指针数组的首地址保存在全局变量char** environ中，因此通过访问全局变量environ可以遍历整个环境表信息；
+	环境表就是一个以空指针 NULL 作为结尾的字符指针数组，
+	其中每个指针都指向一个格式为“变量名=变量值”的字符串，
+	该指针数组的首地址保存在全局变量char** environ中，因此通过访问全局变量environ可以遍历整个环境表信息；
 
 //遍历环境表中的所有信息
 #include<stdio.h>
