@@ -1,4 +1,4 @@
-关键字：强转 if  for  switch _ case _ break  break  continue
+关键字：强转 if       for switch_case_break  break  continue
 
 如果表达式里包含的数字类型不同
 	就必须首先把他们转换成同一个类型，然后才能计算

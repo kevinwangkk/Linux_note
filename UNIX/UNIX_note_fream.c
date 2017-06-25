@@ -1,3 +1,12 @@
+/* C NOTE FREAM */
+	day1 day2 命令行 vi 基础操作  C基础知识
+	day3 数据类型 占位符 零碎知识点 进制转换
+	day4 负数进制转换 占地大类型 占地小类型 强转 八进制 十六进制 操作符
+	day5 隐式类型转换 分支语句（逻辑判断）if for switch case break continue
+	day6 srand()/rand() 输入/输出缓冲区 scanf()/printf()
+							scanf("%*[^\n]");/scanf("%*c"); fflush(stdout);
+	day7 数组 array 多维数组
+
 /* UNIX NOTE FREAM */
 
 1. Unix/Linux系统的概述以及编程基础；
