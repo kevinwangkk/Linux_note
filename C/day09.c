@@ -1,4 +1,4 @@
-关键字：exit()  递归函数  作用域  static
+关键字：exit() 递归函数 作用域  static
 
 /* exit */
 exit标准函数可以立刻结束程序的执行    exit(0)

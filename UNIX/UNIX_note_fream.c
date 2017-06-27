@@ -6,6 +6,7 @@
 	day6 srand()/rand() 输入/输出缓冲区 scanf()/printf()
 							scanf("%*[^\n]");/scanf("%*c"); fflush(stdout);
 	day7 数组 array 多维数组
+	day8 函数 volatile 行参 实参 数组形参 可变长函数参数(内容不足)
 
 /* UNIX NOTE FREAM */
 
