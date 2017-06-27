@@ -7,6 +7,7 @@
 							scanf("%*[^\n]");/scanf("%*c"); fflush(stdout);
 	day7 数组 array 多维数组
 	day8 函数 volatile 行参 实参 数组形参 可变长函数参数(内容不足)
+	day9 
 
 /* UNIX NOTE FREAM */
 
@@ -25,10 +26,27 @@
 			常量字符串不同存放形式的比较(重点) 常量字符串的字符指针 常量字符串的数组
 			虚拟内存管理技术 建立映射关系 0——3G-1 是用户空间 3G——4G-1 是内核空间
 			段错误的由来
-			
+	day28  内存相关函数
+			#include <unistd.h>  getpagesize() //获取一个内存页大小
+			#include <unistd.h>  sbrk()/brk()  //申请动态内存 释放动态内存
+			#include <sys/mman.h>  mmap()/munmap()  //map or unmap files or devices into memory
+
 
 3. Unix/Linux系统下的文件管理以及目录操作；
 
+	day28  标C中的文件操作函数：
+			fopen()/fclose()/fread()/fwrite()/fseek();
+
+		   UC中的文件操作函数：
+			open()/close()/read()/write()/lseek();
+			#include <sys/types.h> 
+			#include <sys/stat.h>
+			#include <fcntl.h>
+			#include <unistd.h>
+	day29  标C和UC文件操作函数的效率  
+		   文件描述符工作原理
+		   #include <unistd.h>  dup()/dup2()  //复制文件描述符
+	day30  
 
 4. Unix/Linux系统下的进程管理技术；
 

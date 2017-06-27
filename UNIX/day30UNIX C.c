@@ -1,14 +1,14 @@
 关键字：文件管理
-	fcntl函数	manipulate file descriptor
+	fcntl函数    manipulate file descriptor
 	文件锁 读写操作附加锁
-	access函数	check real user's permissions for a file
+	access函数    check real user's permissions for a file  '
 	stat/fstat函数（重点）	 get file status
-	ctime函数	localtime函数
+	ctime函数    localtime函数
 	
 
-1. fcntl函数	manipulate file descriptor
+1. fcntl函数		manipulate file descriptor
 	#include <unistd.h>
-       	#include <fcntl.h>
+    #include <fcntl.h>
 	int fcntl(int fd, int cmd, ... /* arg */ );
 第一个参数：文件描述符,open函数的返回值
 第二个参数：具体的操作命令
@@ -28,18 +28,18 @@
            };
 
 返回值：
-	F_DUPFD - 成功返回新的文件描述符;	F_DUPFD  The new descriptor.
-	F_GETFD - 成功返回文件描述符的标志值;	F_GETFD  Value of file descriptor flags.
-	F_GETFL - 成功返回文件的状态标志值；	F_GETFL  Value of file status flags.
-	其他命令成功返回0，所有命令失败均返回-1；	       All other commands -> Zero.
+	F_DUPFD - 成功返回新的文件描述符; F_DUPFD            The new descriptor.
+	F_GETFD - 成功返回文件描述符的标志值; F_GETFD  Value of file descriptor flags.
+	F_GETFL - 成功返回文件的状态标志值; F_GETFL  Value of file status flags.
+	其他命令成功返回0，所有命令失败均返回-1； All other commands -> Zero.
 
 函数功能：
 	用于操作文件描述符，具体方法如下(int cmd 取值)：
-	1. 复制文件描述符			Duplicating a file descriptor
+	1. 复制文件描述符 Duplicating a file descriptor
 	   F_DUPFD - 查找最小的>=arg的描述符作为fd的副本，
 		     与dup2不同的地方在于：若arg已经被其他文件占用，则不会关闭，而是查找>arg的描述符进行复制；
 	
-	2. 操作文件描述符的标志			File descriptor flags
+	2. 操作文件描述符的标志 File descriptor flags
 	   F_GETFD/F_SETFD - 获取/设置文件描述符的标志
 	
 	3. 操作文件的状态标志			File status flags

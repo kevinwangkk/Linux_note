@@ -7,7 +7,7 @@
 	文件的管理
 
 /*常用的内存管理函数*/
-1. getpagesize函数 	getpagesize - get memory page size
+1. getpagesize函数    getpagesize - get memory page size
  	#include <unistd.h>
 	int getpagesize(void);
 
@@ -16,11 +16,11 @@
 
 2. sbrk函数		change data segment size
  	#include <unistd.h>
-	void *sbrk(intptr_t increment);	
+	void *sbrk(intptr_t increment);
 
 函数功能：
 	主要用于根据参数的数值来调整动态内存的大小，
- 具体方式:	当increment >0 时，表示申请动态内存；
+ 具体方式: 当increment >0 时，表示申请动态内存；
 		当increment =0 时，表示获取当前动态内存的末尾地址；
 		当increment <0 时，表示申请释放动态内存；
 	函数调用成功时会返回调整/*之前*/的末尾地址，失败返回(void*)-1;
@@ -73,7 +73,10 @@ int main()
 
 注意：
 	1. 虽然sbrk函数既能申请动态内存又能释放动态内存，但是申请内存的操作更加方便一些；
-	2. 使用sbrk函数申请比较小块的动态内存时，操作系统一次性映射1个内存页大小的地址空间，当sbrk函数申请的动态内存超过1个内存页时，则操作系统会再次映射1个内存页，当sbrk函数释放所有动态内存时，操作系统不会保留映射的地址空间，因此和malloc()和free()函数相比，更加节省内存空间，但是效率低；
+	2. 使用sbrk函数申请比较小块的动态内存时，操作系统一次性映射1个内存页大小的地址空间，
+	   当sbrk函数申请的动态内存超过1个内存页时，则操作系统会再次映射1个内存页，
+	   当sbrk函数释放所有动态内存时，操作系统不会保留映射的地址空间，
+	   因此和malloc()和free()函数相比，更加节省内存空间，但是效率低；
 
 
 3. brk函数 	change data segment size
@@ -88,7 +91,8 @@ int main()
 	当addr < 动态内存原来的末尾地址时，表示释放动态内存；
 
 注意：
-	虽然brk函数既能申请内存又能释放内存，但是释放内存更加方便，因此一般情况下使用sbrk函数和brk函数搭配使用，/*sbrk函数专门用于申请内存，brk函数专门用于释放内存*/；
+	虽然brk函数既能申请内存又能释放内存，但是释放内存更加方便，因此一般情况下使用sbrk函数和brk函数搭配使用，
+	/*sbrk函数专门用于申请内存，brk函数专门用于释放内存*/；
 
 #include<stdio.h>
 #include<unistd.h>
@@ -130,7 +134,7 @@ int main()
 	cur=0x891d000
 
 
-4. mmap函数	map or unmap files or devices into memory
+4. mmap函数     map or unmap files or devices into memory
 	#include <sys/mman.h>
 	void *mmap(void *addr, size_t length, int prot, int flags,int fd, off_t offset);
 第一个参数：指定映射的起始地址，给NULL由系统内核指定；
@@ -238,7 +242,7 @@ POSIX标准 => 使用sbrk函数申请内存，使用brk函数释放内存
 UC中的文件操作函数：
 	open()/close()/read()/write()/lseek();
 
-1. open()函数	open and possibly create a file or device
+1. open()函数    open and possibly create a file or device
       	#include <sys/types.h>
       	#include <sys/stat.h>
        	#include <fcntl.h>
@@ -258,7 +262,7 @@ UC中的文件操作函数：
 		O_CREAT - If the file does not exist it will be created;
 				不存在则创建，存在只打开	
 		O_EXCL - 与O_CREAT搭配使用，若不存在则创建，存在则创建失败;/*exclusion*/
-		O_TRUNC - 若文件存在则清空文件中的内容；			/*truncation*/
+		O_TRUNC - 若文件存在则清空文件中的内容;                 /*truncation*/
 第三个参数：文件的权限信息
 	当创建新文件时，该参数可以用于指定新文件的权限信息，如：0664；
 	当打开一个已经存在的文件时，该参数可以忽略，不需要提供；
@@ -273,11 +277,11 @@ UC中的文件操作函数：
 
 /*ls -l详解*/
 扩展：	ls -l brk.c
--rw-rw-r-- 1 tarena tarena 635  4月 13 11:32 brk.c
+-rw-rw-r-- 1 kevin kevin 635  4月 13 11:32 brk.c
 
-   -       rwx       rw-        r--       1     tarena  tarena    635  
+   -       rwx       rw-        r--       1       kevin    kevin    635  
 文件类型 属主权限 属组权限 其他用户权限 硬链接数 属主名称 属组名称 文件大小 
-	    user  group   other      		用户名   同组名
+	      user     group    other                用户名   同组名
 	
   4月 13 11:32    brk.c
 最后一个修改时间 文件名称
@@ -446,7 +450,8 @@ int main()
 	调整指定文件中的读写位置；
 
 注意：
-	当把文件的读写位置调整到SEEK_END后面的位置再写入数据时，数据也是可以写入的，只是中间有一块区域空闲，该现象叫做文件的空洞现象，该区域会被计算到文件的大小中，但是没有有效数据，获取内容时得到的是'\0';
+	当把文件的读写位置调整到SEEK_END后面的位置再写入数据时，数据也是可以写入的，只是中间有一块区域空闲，
+	该现象叫做文件的空洞现象，该区域会被计算到文件的大小中，但是没有有效数据，获取内容时得到的是'\0';
 
 扩展：
 	如何获取一个文件的大小信息？
