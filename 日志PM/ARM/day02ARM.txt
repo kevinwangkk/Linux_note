@@ -1,0 +1,455 @@
+任务：向开发板安装u-boot.bin程序
+      1、向开发板什么地方装？
+         闪存（Nand Flash），CPU旁边两边有管脚的
+                             TSOP封装
+
+      2、在我们的开发板上，程序在哪里运行？
+         内存（DDR和SRAM）
+         SRAM称为静态RAM（构造，结构）
+              内部是门电路构成	
+           上电就可以工作
+           速度快
+           成本高
+
+         DRAM称为动态RAM
+              内部是电容构成
+            如果内容需要保持的话，需要周期性的给电流刷新。
+            DRAM控制器
+            上电以后我们需要对DRAM控制器进行配置
+            之后DRAM才能工作（供我们读写）
+            速度慢（相对于SRAM）
+            成本低（容量比）
+            
+      我们开发板上有哪些内存？
+          IRAM（SRAM）
+          DDR（DRAM）
+      IRAM在哪里？
+          S5PV210 微处理器内部，看不见
+          片内
+          IRAM有多大？
+          
+      DDR在哪里？
+          开发板上（核心板上）
+          片外
+          1 Gbytes
+      
+      
+
+     在实施安装的动作时，我们几个提前条件？
+        1、CPU本身的特性
+        2、开发板怎么做的
+     
+     S5PV210微处理器有个特性：
+        内部集成了ROM（IROM），三星出厂时在IROM中
+        固化一段程序。
+        当S5PV210处理器上电后，首先执行IROM程序
+        IROM对硬件做个基本的配置，然后检测
+        启动配置管脚的状态，根据状态来从不同的设备
+        上读取启动代码。
+        支持的设备包括：
+            闪存
+            SD卡（我们板子上是大卡）
+            USB
+            UART
+    如果通过usb启动方式安装，需要PC端有配套的USB发送程序
+    如果通过SD卡启动方式，我们就需要有SD卡系统制作软件。
+
+    实施步骤：
+    1、连线（电源，串口，USB）
+    2、拨码开关拨到USB启动
+       1->ON
+       2->OFF
+       3->OFF
+       4->ON
+    3、PC端启动DNW
+       配置DWN的串口参数
+       连接串口
+           使DNW软件开始监控串口，如果开发板端
+           通过串口发送数据过来，DWN就能接收到。
+           我们实验中（人机交互的作用）
+           DNW标题条有变化
+    4、启动开发板
+       如果PC端第一次使用这种方式，会提示发现新硬件
+       需要安装USB驱动。
+       电脑端换个USB口？
+       DNW标题条会有变化：USB：OK
+    注意：电源开启后CPU没运行，按白色的电源键（1秒）
+    
+    5、配置DNW的USB下载地址：0xd0020010
+    6、使用DWN的USB发送功能，发送x210_usb.bin文件
+       dnw发送x210_usb.bin，谁接收？
+          IROM程序接收（三星写）
+          
+       x210_usb.bin 发送到哪里去了？
+          IROM程序接收x210_usb.bin，并存放到
+          0xd0020010地址处（内存）
+          IROM程序执行内存中的x210_usb.bin
+                 
+    7、配置DNW的USB下载地址: 0x23e00000
+        
+    8、通过DNW的USB下载功能发送 u-boot.bin文件
+       IROM程序接收u-boot.bin，并存放都内存中
+       内存地址为0x23e00000
+       IROM程序接收完，执行内存中的u-boot.bin
+       
+    9、在dnw窗口按空格键
+       tarena #
+       
+       说明我们的u-boot.bin已经在内存中运行起来
+       OK.... tarnea #这些信息都是u-boot.bin
+       通过串口发送出来的。
+   
+   问题：我们怎么确定数据是写入到IRAM还是DDR？（在我们
+            的开发板上）
+   
+   问题：4根地址线能访问多大存储空间？
+            16个字节
+         10根？
+            1024 1K    
+         32根？
+            4 G bytes
+            
+         我们使用的S5PV210微处理器内部由32根地址线
+          存储空间4G字节。
+          采用平板式管理
+          
+          S5PV210处理器管理的存储空间！！4G
+          这里面也包括开发板上内存1G字节。
+          
+          
+    x210_usb.bin被放到IRAM（0xD0020010）
+    u-boot.bin被放倒DDR（0x23e00000） 0x20000000--- 1Gbyte
+    
+    u-boot.bin为什么放到DDR？
+       IRAM只有96K，放不下u-boot.bin
+       u-boot.bin有300多K。
+    
+    问题我们把u-boot.bin放到开发板内存（DDR中）
+    经过一个动作，先把x210_usb.bin放到0xd0020010（IRAM）
+    中并执行。然后再把u-boot.bin放到0x23e00000（DDR）中
+    执行。为什么这样做?
+    
+    为什么不直接把u-boot.bin放到DDR中？
+       上电后，IROM程序没有配置DDR控制器，DDR不可以访问
+       所以此时不能把u-boot.bin直接放到DDR中。
+    下载x210_usb.bin（放到IRAM），并执行后，x210_usb.bin
+    对DRAM控制器进行了配置，使DDR可以工作，可以访问了。
+    之后才可以把u-boot.bin放到DDR中。
+    
+    x210_usb.bin 配置DRAM控制器是只配置了300多K呢，
+    还是都配置？
+    x210_usb.bin 配置好DRAM控制器后，1G DDR都可以用了。
+    
+    
+     10、把u-boot.bin写到开发板的闪存中
+        u-boot运行
+        u-boot命令：print 显示u-boot环境变量
+               ipaddr=192.168.1.6
+               ipaddr环境变量指定开发板的ip地址
+               （只在u-boot执行时有效）
+               
+               serverip=192.168.1.8
+               serverip 服务器IP地址（开发主机的ip地址）
+               
+               环境变量的值是可以改写
+               setenv 命令可以改环境变量的值
+		eg. setenv serverip 192.168.1.9
+                      
+                      闪存环境变量 setenv 环境变量的名
+                      
+               saveenv 把环境变量保存到闪存
+		或是 save
+               
+               
+               help 查看帮助的命令
+               help可以不跟参数，显示所有的命令
+               help 命令名 显示某个命令的帮助
+               
+               dnw 是三星提供的，和PC端dnw配合使用的
+                   usb下载命令
+                   
+               
+           通过u-boot.bin的dnw命令把pc端的u-boot.bin
+           下载到开发板内存 0x20008000处
+
+		dnw 0x20008000
+		之后等待传输u-boot.bin,
+		传输后即把u-boot.bin下载到开发板内存 0x20008000处
+           
+           通过PC端DNW的usb发送命令，发送u-boot.bin
+           到开发板内存。
+           
+           如果提示校验和 OK说明下载成功
+           至此，内存0x20008000处是不是就有了个和pc端
+           一样的u-boot.bin。
+           
+           接下来我就把内存0x20008000处的u-boot.bin
+           写入到闪存(闪存用词不当 明明是 DRAM)中去。
+           
+           闪存有个特性，如果闪存中有数据，再写入数据
+           需要先擦除原来的数据，然后再写。
+           
+           我们需要先擦除指定位置的数据，然后再写。
+           我们向闪存什么位置写呢？
+           向闪存最开始写。
+           我们系统中把闪存最开始2M 字节空间给
+           u-boot.bin了。
+           
+           所以我先擦除闪存最开始的2M字节
+           然后把u-boot.bin写入到闪存最开始。
+           
+           nand  erase 闪存擦除命令
+           
+           nand  erase  起始地址 大小
+           
+           nand  erase 0x0  0x200000
+              从闪存最开始擦除，擦除2M大小
+           
+           注：u-boot命令中里面数值 0x0 0x200000
+               0  200000 效果一样，默认是16进制
+           
+           nand write 命令把开发板内存中的值
+                      写入到闪存中去。
+                      
+           nand write 内存地址  闪存起始位置 大小
+           
+           nand write 0x20008000  0  100000
+       
+       
+       dnw 0x20008000
+       nand erase 0 0x200000    
+       nand write 0x20008000 0 0x100000
+       
+       至此 我们已经把pc上u-boot.bin写入到
+       开发板闪存最是的300K，如果没出错。
+       安装完成，可以检验。
+       
+       11、关电源
+       12、拨码开关
+           1->ON
+           2->OFF
+           3->OFF
+           4->OFF
+       13、开机
+           按空格键，进入到u-boot命令行
+           如果不按空格，延时结束后，u-boot自动去闪存 
+           加载linux内核到内存并执行。
+       
+      1、当我执行nand write命令向闪存写数据的时候
+         开发板内存中有几个u-boot.bin?
+         两个。
+         一个正在运行，一个是存放在内存中。
+         0x23e00000           0x20008000
+         
+         0x23e00000地方的接收者：IROM程序
+            IROM程序接收完后，自动运行此u-boot。
+            
+         0x20008000地方的接收者：u-boot的dnw命令
+            dnw命令只负责接收。
+      2、我们写入到闪存的是哪个？
+         0x20008000
+         
+      3、为什么多做一遍，费事？
+         直接0x23e00000处的u-boot写入闪存可以不？
+         
+         原则：我们希望写入到闪存里面的u-boot.bin
+               和PC上的应该是完全一样。
+                  
+         因为0x23e00000处的u-boot.bin已经运行了，
+         不能保证和pc上u-boot.bin完全一致了。
+         所以我单独下载一次，并入写入。
+         
+         
+         u-boot.bin 里面至少包括:
+         代码  （code段）
+         有初值的全局变量（data段）
+         
+任务：
+     编写代码控制开发板上LED1的亮和灭。
+     （裸板的软件开发）
+     1、看图
+        原理图
+        目的：找到LED1在电路上的连接关系
+        1、找出控制LED1亮和灭的CPU的管脚
+           GPC1_3
+           融汇广泽的 GPC0_3
+           
+        2、CPU的管脚输出高或者低 LED1亮或者灭
+            输出高电平，LED1亮
+            输出低电平，LED1灭
+                    
+     2、S5PV210的说明书（手册）
+        来知道如何控制CPU对应的管脚输出高和低电平
+
+    
+    为了控制LED1的亮和灭
+    我们需要操作3个GPIO的寄存器
+
+	配置寄存器           配置成输出
+	上下拉电阻寄存器     配置成禁止上，下拉电阻
+	数据寄存器           配置高低电平
+	
+       GPC0CON           
+       GPC1CON    配置寄存器
+                  配置管脚的功能的
+                  我们需要配置成输出
+                  GPC1 3 
+                  GPC0 3 
+                  BIT[15:12]
+                      0001
+      GPC0PUD 
+      GPC1PUD     上下拉电阻寄存器
+                  我们实验里面禁止上、下拉电阻
+                  GPC0  3 或者GPC1 3
+                  BIT[7:6]
+                       00
+      GPC0DAT  
+      GPC1DAT     数据寄存器
+                  GPC0 3  或者 GPC1 3
+                  BIT[3] = 1  输出高电平
+                  BIT[3] = 0  输出低电平
+  
+    
+      如果在虚拟机上建立于主机上的共享文件夹
+	在VMwareWorkstation 
+	VM-> Settings-> Options->Shared Folders
+	之后选择Always enabled 再建立一个文件夹路径  
+	
+	而在终端中 cd /mnt/hgfs/shared/  即为共享文件夹内          
+ 
+
+     
+      通过网络方式把PC上的文件传到开发板内存
+      tftp方式传输，需要tftp服务器，需要一个tftp客户端
+      在我们的开发方式中谁作为服务器？谁作为客户端？
+        电脑（开发主机）作为服务器，需要tftp服务器软件
+        开发板端需要一个tftp客户端，u-boot的tftp命令
+        
+        u-boot 的tftp命令如何使用？
+        tftp 下载地址   下载的文件名
+        
+             下载地址是开发板的内存地址
+                把下载的文件存到开发板什么位置
+             下载的文件名
+                把服务器上的文件下载到开发板
+                这个文件应该在tftp服务器端存在
+                
+        tftp  0x20008000  u-boot.bin
+        
+             把tftp服务器上的u-boot.bin下载到
+             开发板内存中，内存地址是0x20008000
+             
+       为了使用tftp命令下载需要
+          1、pc端需要安装tftp服务器，配置服务器
+             tftpd-hpa
+             
+             配置 /etc/default/tftpd-hpa
+             
+          2、启用tftp服务器
+   
+             sudo /etc/init.d/tftpd-hpa  restart 
+             
+          3、使用u-boot的tftp命令下载服务器上的文件
+             到开发板内存。
+             需要保证网络是连同。
+             需要对网络做一个配置
+             如果ping不通：
+               1、网线
+               2、pc端网口
+               3、开发板端的网口
+               4、可以尝试关闭pc端防火墙
+         4、把u-boot.bin放到ubuntu的 tftp 服务器目录中
+             /tftpboot
+             
+             tftp 20008000 u-boot.bin
+
+1.ubuntn ip  与 serverip 一致
+2.两个桥接
+	1.VM->Settings->Network Adapter->Network connection->Bridged
+	2.Edit->Virtual Network Editor ->Bridged to->选择与开发板连接的网卡
+
+	用dnw 输入 ping 192.168.1.8（serverip） 检查是否连通
+
+3.配置服务器 tftpd-hpa
+
+	  1 # /etc/default/tftpd-hpa
+  	  2 
+  	  3 TFTP_USERNAME="tftp"
+          4 TFTP_DIRECTORY="/tftpboot"       //配置文件目录 下载文件放在此目录
+          5 TFTP_ADDRESS="0.0.0.0:69"
+          6 TFTP_OPTIONS="--secure"
+
+	
+4.一个启用tftp服务器指令
+
+	sudo /etc/init.d/tftpd-hpa  restart
+
+
+
+
+OK
+
+##### JFJKJ BIOS for JFJ210 #####
+
+This Board: SDRAM is 1024MB; 
+
+Hit any key to stop autoboot:  0 
+
+Unknown command 'menu' - try 'help'
+
+tarena # dnw 0x20008000
+
+OTG cable Connected!
+
+Now, Waiting for DNW to transmit data
+
+Download Done!! Download Address: 0x20008000, Download Filesize:0x5c000
+
+Checksum is being calculated.
+
+Checksum O.K.
+
+tarena # nand erase 0 200000
+
+
+NAND erase: device 0 offset 0x0, size 0x200000
+
+
+Erasing at 0x0 --   6弌mplete.
+Erasing at 0x20000 --  12omplete.
+Erasing at 0x40000 --  18omplete.
+Erasing at 0x60000 --  25complete.
+Erasing at 0x80000 --  31omplete.
+Erasing at 0xa0000 --  37omplete.
+Erasing at 0xc0000 --  43omplete.
+Erasing at 0xe0000 --  50complete.
+Erasing at 0x100000 --  56弌mplete.
+Erasing at 0x120000 --  62弌mplete.
+Erasing at 0x140000 --  68弌mplete.
+Erasing at 0x160000 --  75弌mplete.
+Erasing at 0x180000 --  81弌mplete.
+Erasing at 0x1a0000 --  87弌mplete.
+Erasing at 0x1c0000 --  93complete.
+Erasing at 0x1e0000 -- 100弌mplete.
+
+OK
+
+tarena # nand write 0x20008000 0 100000
+
+
+NAND write: device 0 offset 0x0, size 0x100000
+
+Main area read (8 blocks):
+
+Checksum is calculated.
+
+Main area write (8 blocks):
+
+ 1048576 bytes written: OK
+
+tarena # 
+
+
+
+
+sudo /etc/init.d/tftpd-hpa  restart

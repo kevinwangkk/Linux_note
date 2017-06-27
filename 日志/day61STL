@@ -1,0 +1,873 @@
+关键字：
+
+
+标准模板库（Standard Templates Library, STL）
+
+	容器：以类模板的形式实现不同的数据结构：数组，链表，堆栈，队列，二叉树，等等。
+	线性容器：/*向量（verctor）*/，双端队列（deque），/*列表（list）*/
+	适配器容器：堆栈（stack），队列（queue），优先队列（priority_queue）
+	关联容器：映射（map），多重映射（multimap），集合（set），多重集合（multiset）
+
+
+每个容器都提供四个迭代器：
+	正向迭代器：interator
+	常正向迭代器：const_iterator
+	反向迭代器：reverse_iterator
+	常反向迭代器：const_reverse_iterator
+
+只有向量和双端队列这种连续的内存的容器才会提供随机迭代器，其他容器都只提供顺序迭代器。
+
+基于迭代器，在与具体数据结构无关的前提下，以一种一般化的方式访问不同类型的容器，得到了一组泛型算法函数。
+一种容器是否可适用于特定的泛型算法，唯一的条件就是该容器满足算法对迭代器的要求。
+
+
+一. 向量
+#include<verctor>
+
+1. 连续内存，下标访问，动态内存管理，静态内存预留  --- 基本特性
+
+2. 随机迭代器：可以和整数做加减运算，同型迭代器之间可以比较大小也可以相减，但是不能相加。
+
+3. 成员函数
+	front()/back()
+	push_back()/pop_back()
+	insert()/erase()
+	clear()/size()/capacity() /empty()
+	begin()/begin() const - 可写/只读起始正向迭代器
+	end()/end() const - 可写/只读终止正向迭代器
+	rbegin()/rbegin() const - 可写/只读起始反向向迭代器
+	rend()/rend() const - 可写/只读终止反向迭代器
+
+vec1.cpp
+
+#include <iostream>
+#include <vector>
+using namespace std;
+void print (vector<int> const& vi) {
+	cout << "字节：" << sizeof (vi) << endl;
+	size_t size = vi.size ();
+	cout << "大小：" << size << endl;
+	cout << "元素：" << flush;
+	for (size_t i = 0; i < size; ++i)
+		cout << vi[i] << '(' << &vi[i]
+			<< ") ";
+	cout << endl;
+}
+int main (void) {
+	vector<int> v1; // 空向量
+	print (v1);
+	vector<int> v2 (5); // 预留空间
+	print (v2);
+	vector<int> v3 (5, 10); // 指定初值
+	print (v3);
+	int ai[7] = {1, 2, 3, 4, 5, 6, 7};
+	vector<int> v4 (ai+1, ai+6);
+	print (v4);
+	vector<int> v5 (ai, ai+7);
+	print (v5);
+	vector<int> v6 (&ai[0], &ai[7]);
+	// &ai[7] <=> &*(ai+7) <=> ai+7
+	print (v6); // 1 2 3 4 5 6 7
+	vector<int>::iterator it = v6.begin ();
+	cout << *it << endl;				//1
+	++it;
+	cout << *it << endl;				//2
+	it--;
+	cout << *it << endl;				//1
+	it += 2;
+	cout << *it << endl;				//3
+	vector<int>::iterator it1 = v6.begin(),
+		it2 = v6.end ();
+	cout << boolalpha << (it1 < it2) << endl;	//true
+	cout << it2 - it1 << endl;			//7
+	++*it1;
+	cout << *it1 << endl;				//2
+	vector<int>::const_iterator it3 = it1;
+	cout << *it3 << endl;				//2
+//	--*it3;	//const 不能改变内部值
+	++++it3;
+	cout << *it3 << endl;				//3
+	vector<int> const& cr = v6;
+	it3 = cr.begin (); // begin () const
+	vector<int>::reverse_iterator it4 =
+		v6.rbegin (), it5 = v6.rend ();
+	cout << *it4 << endl;				//7
+	cout << *(it5-1) << endl;			//2
+	cout << (it4 < it5) << endl;			//true
+	cout << it5 - it4 << endl;			//7
+	return 0;
+}
+
+结果：	字节：12
+	大小：0
+	元素：
+	字节：12
+	大小：5
+	元素：0(0x8360008) 0(0x836000c) 0(0x8360010) 0(0x8360014) 0(0x8360018) 
+	字节：12
+	大小：5
+	元素：10(0x8360020) 10(0x8360024) 10(0x8360028) 10(0x836002c) 10(0x8360030) 
+	字节：12
+	大小：5
+	元素：2(0x8360038) 3(0x836003c) 4(0x8360040) 5(0x8360044) 6(0x8360048) 
+	字节：12
+	大小：7
+	元素：1(0x8360050) 2(0x8360054) 3(0x8360058) 4(0x836005c) 5(0x8360060) 6(0x8360064) 7(0x8360068) 
+	字节：12
+	大小：7
+	元素：1(0x8360070) 2(0x8360074) 3(0x8360078) 4(0x836007c) 5(0x8360080) 6(0x8360084) 7(0x8360088) 
+	1
+	2
+	1
+	3
+	true
+	7
+	2
+	2
+	3
+	7
+	2
+	true
+	7
+
+
+4. 类类型的向量元素
+如果向量中的元素类型是自定义类，往往该类需要支持如下特性：
+	缺省构造函数，深拷贝构造函数和拷贝赋值运算符函数，
+如果需要搜索功能，还需要支持“==”运算符，
+如果需要做排序，还需要支持“<”运算符，或者提供小于比较器。
+
+
+vec2.cpp
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+class A {
+public:
+	A (void) {
+		cout << "缺省构造：" << this << endl;
+	}
+	A (int arg) : m_var (arg) {
+		cout << "有参构造：" << this << endl;
+	}
+	A (A const& a) : m_var (a.m_var) {
+		cout << "拷贝构造：" << &a << "->"
+			<< this << endl;
+	}
+	A& operator= (A const& a) {
+		cout << "拷贝赋值：" << &a << "->"
+			<< this << endl;
+		m_var = a.m_var;
+		return *this;
+	}
+	~A (void) {
+		cout << "析构函数：" << this << endl;
+	}
+	bool operator== (A const& a) const {
+		return m_var == a.m_var;
+	}
+	/*
+	bool operator< (A const& a) const {   “<”运算符重载
+		return m_var < a.m_var;
+	}
+	*/
+	int m_var;
+};
+bool cmpA (A const& x, A const& y) {		//对象实现小于比较器
+	return x.m_var < y.m_var;
+}
+
+class CmpA {
+public:
+	bool operator() (A const& x,		//函数对象实现小于比较器
+		A const& y) const {
+		return x.m_var < y.m_var;
+	}
+};
+
+void print (vector<A> const& va) {
+	for (size_t i = 0; i < va.size (); ++i)
+		cout << va[i].m_var << ' ';
+	cout << endl;
+}
+int main (void) {
+	cout << "-------- 1 --------" << endl;
+	vector<A> v1;
+	cout << "-------- 2 --------" << endl;
+	vector<A> v2 (3);
+	cout << "-------- 3 --------" << endl;
+	v2.push_back (3);
+	cout << "-------- 4 --------" << endl;
+	v2.erase (v2.begin ());
+	cout << "-------- 5 --------" << endl;
+	v2[0] = 300;
+	v2[1] = 200;
+	v2[2] = 100;
+	vector<A>::iterator it = find (
+		v2.begin (), v2.end (), 200);
+	cout << it->m_var << endl;
+	cout << "-------- 6 --------" << endl;
+	print (v2);
+//	sort (v2.begin (), v2.end ());
+//	sort (v2.begin (), v2.end (), cmpA);
+	sort (v2.begin (), v2.end (), CmpA ());
+	print (v2);
+	cout << "-------- X --------" << endl;
+	return 0;
+}
+
+结果：	-------- 1 --------
+	-------- 2 --------
+	缺省构造：0xbfad4408
+	拷贝构造：0xbfad4408->0x96a4008
+	拷贝构造：0xbfad4408->0x96a400c
+	拷贝构造：0xbfad4408->0x96a4010
+	析构函数：0xbfad4408
+	-------- 3 --------
+	有参构造：0xbfad440c
+	拷贝构造：0xbfad440c->0x96a4024
+	拷贝构造：0x96a4008->0x96a4018
+	拷贝构造：0x96a400c->0x96a401c
+	拷贝构造：0x96a4010->0x96a4020
+	析构函数：0x96a4008
+	析构函数：0x96a400c
+	析构函数：0x96a4010
+	析构函数：0xbfad440c
+	-------- 4 --------
+	拷贝赋值：0x96a401c->0x96a4018
+	拷贝赋值：0x96a4020->0x96a401c
+	拷贝赋值：0x96a4024->0x96a4020
+	析构函数：0x96a4024
+	-------- 5 --------
+	有参构造：0xbfad4418
+	拷贝赋值：0xbfad4418->0x96a4018
+	析构函数：0xbfad4418
+	有参构造：0xbfad441c
+	拷贝赋值：0xbfad441c->0x96a401c
+	析构函数：0xbfad441c
+	有参构造：0xbfad4420
+	拷贝赋值：0xbfad4420->0x96a4020
+	析构函数：0xbfad4420
+	有参构造：0xbfad4380
+	析构函数：0xbfad4380
+	有参构造：0xbfad4384
+	析构函数：0xbfad4384
+	200
+	-------- 6 --------
+	300 200 100 
+	拷贝构造：0x96a401c->0xbfad4360
+	拷贝赋值：0x96a4018->0x96a401c
+	拷贝赋值：0xbfad4360->0x96a4018
+	析构函数：0xbfad4360
+	拷贝构造：0x96a4020->0xbfad4360
+	拷贝赋值：0x96a401c->0x96a4020
+	拷贝赋值：0x96a4018->0x96a401c
+	拷贝赋值：0xbfad4360->0x96a4018
+	析构函数：0xbfad4360
+	100 200 300 
+	-------- X --------
+	析构函数：0x96a4018
+	析构函数：0x96a401c
+	析构函数：0x96a4020
+
+
+
+二. 双端队列（deque）
+#include<deque>
+
+1. 双端队列无论是实现还是功能几乎和向量完全一样。
+	在存储结构上，双端队列也是连续内存，也支持下标访问和随机迭代，但是和向量不同，动态存储区的首端是开放的，可以通过push_front/pop_front成员函数，在容器的首端做元素的压入和弹出。
+
+2. 双端队列无论是内存空间还是操作时间都会略逊于向量。
+
+
+三. 列表（list）
+#include<list>
+
+1. 唯一化
+void unique(void);
+连续重复出现元素做唯一化。
+10 10 20 20 10 20 30 20 20 10 10
+| unique();
+V
+10 20 10 20 30 20 10
+
+
+2. 排序
+
+void sort(void);
+通过元素类型的 “<” 比大小
+
+void sort(less cmp);
+通过小于比较器cmp比大小
+
+
+
+list1.cpp
+
+#include <iostream>
+#include <list>
+//#include <algorithm>
+using namespace std;
+void print (list<int> const& li) {
+	for (list<int>::const_iterator it =
+		li.begin (); it != li.end (); ++it)
+		cout << *it << ' ';
+	cout << endl;
+}
+class CmpInt {
+public:
+	bool operator() (int a, int b) const {
+		return a > b;
+	}
+};
+int main (void) {
+	int ai[] = {10,10,20,20,10,20,30,20,20,
+		10,10};
+	list<int> l1 (ai, ai + sizeof (ai) /
+		sizeof (ai[0]));
+	print (l1);
+//	sort (l1.begin (), l1.end ());
+//	l1.sort ();
+	l1.sort (CmpInt ());
+	print (l1);
+	l1.unique ();
+	print (l1);
+	return 0;
+}
+
+结果：	10 10 20 20 10 20 30 20 20 10 10 
+	30 20 20 20 20 20 10 10 10 10 10 
+	30 20 10 
+
+
+3. 列表拆分
+将参数列表的部分或全部/*剪切*/到调用列表的指定位置。
+
+void splice(IT pos, list& lst);
+将lst列表中的全部元素剪切到调用列表pos迭代器/*之前*/。
+
+void splice(IT pos, list& lst，IT del);
+将lst列表中的del迭代器所指向的元素剪切到调用列表pos迭代器/*之前*/。
+
+void splice(IT pos, list& lst，IT begin, IT end);
+将lst列表中的begin和end两个迭代器之间的元素剪切到调用列表pos迭代器之前。
+
+注：在STL中凡是用两个迭代器表示一个范围，其终止迭代器一定是范围中最后一个元素的下一个位置。
+
+
+
+4. 有序合并
+将有序的参数列表的全部元素合并到有序调用列表中，合并后的调用列表依然有序，参数列表为空。
+
+void merge(list& lst);
+
+void merge(list& lst,LESS less);
+
+
+
+list2.cpp
+
+#include <iostream>
+#include <list>
+using namespace std;
+void print (list<int> const& li) {
+	for (list<int>::const_iterator it =
+		li.begin (); it != li.end (); ++it)
+		cout << *it << ' ';
+	cout << endl;
+}
+class IntCmp {
+public:
+	bool operator() (int a, int b) const {
+		return a > b;
+	}
+};
+int main (void) {
+	list<int> l1;
+	l1.push_back (100);
+	l1.push_back (500);
+	l1.push_back (900);
+	list<int> l2;
+	l2.push_back (10000);
+	l2.push_back (20000);
+	l2.push_back (30000);
+	l2.push_back (40000);
+	l2.push_back (50000);
+	cout << "l1: " << flush;
+	print (l1);
+	cout << "l2: " << flush;
+	print (l2);
+	list<int>::iterator pos = l1.begin ();
+//	l1.splice (++pos, l2);
+//	list<int>::iterator del = l2.begin ();
+//	l1.splice (++pos, l2, ++++del);
+	list<int>::iterator begin = l2.begin (),
+		end = l2.end ();
+	l1.splice (++pos, l2, ++begin, --end);
+	cout << "l1: " << flush;
+	print (l1);
+	cout << "l2: " << flush;
+	print (l2);
+	l1.clear ();
+	l1.push_back (10);
+	l1.push_back (70);
+	l1.push_back (90);
+	l1.sort (IntCmp ());
+	l2.clear ();
+	l2.push_back (20);
+	l2.push_back (30);
+	l2.push_back (80);
+	l2.push_back (100);
+	l2.push_back (200);
+	l2.sort (IntCmp ());
+	cout << "l1: " << flush;
+	print (l1);
+	cout << "l2: " << flush;
+	print (l2);
+	l1.merge (l2, IntCmp ());
+	cout << "l1: " << flush;
+	print (l1);
+	cout << "l2: " << flush;
+	print (l2);
+	return 0;
+}
+
+结果：	l1: 100 500 900 
+	l2: 10000 20000 30000 40000 50000 
+	l1: 100 20000 30000 40000 500 900 
+	l2: 10000 50000 
+	l1: 90 70 10 
+	l2: 200 100 80 30 20 
+	l1: 200 100 90 80 70 30 20 10 
+	l2: 
+
+
+
+
+四. 堆栈
+#include<stack>
+stack<元素类型，底层容器>
+底层容器：vector/deque(缺省)/list
+push -> push_back
+pop -> pop_back
+top -> back
+size -> size
+clear -> clear
+empty -> empty
+
+
+
+stack.cpp
+
+#include <iostream>
+#include <stack>
+#include <vector>
+#include <list>
+using namespace std;
+int main (void) {
+	stack<int, vector<int> > si;
+	si.push (100);
+	si.push (200);
+	si.push (300);
+	while (! si.empty ()) {
+		cout << si.top () << ' ';
+		si.pop ();
+	}
+	cout << endl;
+	stack<string/*, list<string>*/> ss;
+	ss.push ("C++!");
+	ss.push ("喜欢");
+	ss.push ("我们");
+	while (! ss.empty ()) {
+		cout << ss.top ();
+		ss.pop ();
+	}
+	cout << endl;
+	return 0;
+}
+
+结果：	300 200 100 
+	我们喜欢C++!
+
+
+
+五. 队列
+#include<queue>
+queue<元素类型，底层容器>
+底层容器：deque(缺省)/list
+push -> push_back
+pop -> pop_front  //向量（vector）不能适配队列
+front -> front
+back -> back
+size -> size
+clear -> clear
+empty -> empty
+
+
+六. 优先队列
+#include<queue>
+priority_queue<元素类型，底层容器，小于比较器>
+默认通过元素类型的 "<" 比大小，以/*大者*/优先，通过小于比较器可以自定优先级。
+
+底层容器：vector/deque（缺省）
+每次压入元素，优先队列调整元素位置，保证优先级越高的元素越靠近队首，以保证优者先出的规则。
+小于比较器是优先队列类模板的类型参数，优先队列内部负责将该类实例化为对象，因此只能使用定义“()”操作符的类，而不能使用函数指针。
+
+pqueue.cpp
+
+#include <iostream>
+#include <queue>
+#include <vector>
+#include <list>
+using namespace std;
+class Student {
+public:
+	Student (string const& name, int age,
+		int score) : m_name (name),
+		m_age (age), m_score (score) {}
+	bool operator< (Student const& rhs)const{
+		return m_age < rhs.m_age;
+	}
+	friend ostream& operator<< (ostream& os,
+		Student const& student) {
+		return os << '(' << student.m_name
+			<< ',' << student.m_age << ','
+			<< student.m_score << ')';
+	}
+private:
+	string m_name;
+	int m_age;
+	int m_score;
+	friend class StuCmp;
+};
+class StuCmp {
+public:
+	bool operator() (Student const& a,
+		Student const& b) const {
+		return a.m_score < b.m_score;	//分数大的优先出
+	}
+};
+int main (void) {
+//	priority_queue<Student,
+//		vector<Student> > ps;
+	priority_queue<Student,
+		/*list*/vector<Student>, StuCmp> ps;
+	ps.push (Student ("张飞", 30, 90));
+	ps.push (Student ("赵云", 20, 80));
+	ps.push (Student ("关羽", 40, 70));
+	ps.push (Student ("黄忠", 50, 50));
+	ps.push (Student ("马超", 60, 40));
+	while (! ps.empty ()) {
+		cout << ps.top () << flush;
+		ps.pop ();
+	}
+	cout << endl;
+	return 0;
+}
+
+结果：(张飞,30,90)(赵云,20,80)(关羽,40,70)(黄忠,50,50)(马超,60,40)
+
+
+注意：任何容器的迭代器都存在有效期，任何一种对容器内存布局构成影响的操作，都应该重置迭代器。
+
+limit.cpp
+0000000000000000001
+
+
+
+
+
+七. 映射
+#include<map>
+map<键类型，值类型>
+现实世界中普遍存在某种一一对应的关系，如
+居民身份证号码->个人信息  
+学号->成绩
+查询线索称为键，被查询的信息称为值。在映射中，可以根据键在对数时间（O（logN））内找到和它对应的值。
+映射在逻辑层用一个平衡有序二叉树保存每个节点中的键和值。
+
+平衡有序二叉树：每个节点的左右子树元素个数最多相差一个的有序二叉树。
+
+5 4 3 2 1
+            5
+           /  
+         4
+        /
+      3
+     /
+   2
+  /
+1
+单连枝树，退化成链表，O(logN)->O(N)
+           3
+         /   \
+       2      4
+      /          \
+    1             5
+平衡有序树，保证搜索过程中的最优时间复杂度=最差时间复杂度=平均时间复杂等=O(logN)。
+
+映射基本元素是pair，每个pair包含键和值两份数据。
+template<typename FIRST, typename SECOND>
+class pair{
+public:
+	pair(FIRST const& f, SECOND const& s): first(f), second(s){}
+	FIRST first;
+	SECOND second;
+};
+映射节点中存放pair对象，其中first表示键，second表示值，依据键构成有序树。
+
+
+投票选举系统
+五个候选人
+十个人投票
+A-E五个字符分别对应每个候选人
+map<char,Candidate>
+可以通过比较器类型自定义键的排序规则。
+
+map.cpp
+
+#include <iostream>
+#include <map>
+using namespace std;
+// 候选人
+class Candidate {
+public:
+	// 构造函数
+	Candidate (string const& name = "") :
+		m_name (name), m_votes (0) {}
+	// 获取姓名
+	string const& name (void) const {
+		return m_name;
+	}
+	// 获取票数
+	int votes (void) const {
+		return m_votes;
+	}
+	// 投票
+	void vote (void) {
+		++m_votes;
+	}
+private:
+	string m_name;  // 姓名
+	int    m_votes; // 票数
+};
+class ChrCmp {
+public:
+	bool operator() (char a, char b) const {
+		return a > b;
+	}
+};
+// 进程入口
+int main (void) {
+//	map<char, Candidate> mcc;
+	map<char, Candidate, ChrCmp> mcc;
+	mcc['E'] = Candidate ("曹操");
+	mcc.insert (pair<char, Candidate> (
+		'A', Candidate ("张飞")));
+	mcc['D'] = Candidate ("刘备");
+	mcc['C'] = Candidate ("赵云");
+	mcc.insert (make_pair (
+		'B', Candidate ("关羽")));
+	typedef map<char,Candidate>::iterator IT;
+	pair<IT, bool> ret = mcc.insert (
+		pair<char, Candidate> (
+			/*'A'*/'F', Candidate ("杨健")));
+	mcc['A'] = Candidate ("马如忠");
+	if (! ret.second)
+		cout << "插入失败！" << endl;
+	else
+		cout << "插入成功：" << ret.first->
+			first << "->" << ret.first->
+			second.name () << endl;
+	for (int i = 0; i < 10; ++i) {
+		for (IT it = mcc.begin ();
+			it != mcc.end (); ++it)
+			cout << '(' << it->first << ')'
+				<< it->second.name () << ' ';
+		cout << endl << "请投下宝贵的一票：";
+		char key;
+		cin >> key;
+		IT it = mcc.find (key);
+		if (it == mcc.end ()) {
+			cout << "废票！" << endl;
+			continue;
+		}
+		it->second.vote ();
+	}
+	IT win = mcc.begin ();
+	for (IT it = mcc.begin ();
+		it != mcc.end (); ++it) {
+		cout << it->second.name () << "获得"
+			<< it->second.votes () << "票。"
+			<< endl;
+		if (it->second.votes () >
+			win->second.votes ())
+			win = it;
+	}
+	cout << "热烈祝贺" << win->second.name ()
+		<< "成功当选首席保洁员！" << endl;
+	return 0;
+}
+
+
+
+八. 多重映射
+允许键重复的映射。表示一对多的关系。不支持下标访问。
+
+IT lower_bound(KEY const& key);  //返回匹配下限
+IT upper_bound(KEY const& key);  //返回匹配上限
+
+键  值
+A - 100 
+A - 200
+B - 300 <- lower_bound('B')
+B - 400
+B - 500 
+C - 600 <- upper_bound('B')
+C - 700
+
+pair<IT,IT> equal_range(KEY const& key);   
+//返回匹配范围，其中first是匹配下限，second是匹配上限
+
+mmap.cpp
+
+#include <iostream>
+#include <map>
+using namespace std;
+int main (void) {
+	multimap<string, int> msi;
+	msi.insert (make_pair ("张飞", 70));
+	msi.insert (make_pair ("赵云", 60));
+	msi.insert (make_pair ("张飞", 90));
+	msi.insert (make_pair ("关羽", 80));
+	msi.insert (make_pair ("赵云", 50));
+	msi.insert (make_pair ("关羽", 70));
+	typedef multimap<string,
+		int>::iterator IT;
+	for (IT it = msi.begin ();
+		it != msi.end (); ++it)
+		cout << it->first << " : "
+			<< it->second << endl;
+	for (IT it = msi.begin ();
+		it != msi.end (); ++it) {
+		string key = it->first;
+		IT end = msi.upper_bound (key);
+		int sum = 0;
+		for (; it != end; ++it)
+			sum += it->second;
+		cout << key << " - " << sum << endl;
+		--it;
+	}
+	pair<IT, IT> its = msi.equal_range (
+		"关羽");
+	cout << its.first->first << " * "
+		<< its.first->second << endl;
+	cout << its.second->first << " * "
+		<< its.second->second << endl;
+	return 0;
+}
+
+结果：	关羽 : 80
+	关羽 : 70
+	张飞 : 70
+	张飞 : 90
+	赵云 : 60
+	赵云 : 50
+	关羽 - 150
+	张飞 - 160
+	赵云 - 110
+	关羽 * 80
+	张飞 * 70
+
+
+九. 集合
+#include<set>
+set<键类型>
+没有值的映射。
+
+
+十. 多重集合
+#include<set>
+multiset<键类型>
+没有值的多重映射。
+
+set.cpp
+
+#include <iostream>
+#include <set>
+using namespace std;
+int main (void) {
+	set<int> si;
+	si.insert (10);
+	si.insert (20);
+	si.insert (10);
+	si.insert (30);
+	si.insert (20);
+	for (set<int>::iterator it = si.begin ();
+		it != si.end (); ++it)
+		cout << *it << ' ';
+	cout << endl;
+	multiset<int> msi;
+	msi.insert (10);
+	msi.insert (20);
+	msi.insert (10);
+	msi.insert (30);
+	msi.insert (20);
+	for (multiset<int>::iterator it =
+		msi.begin (); it != msi.end (); ++it)
+		cout << *it << ' ';
+	cout << endl;
+	return 0;
+}
+
+结果：	10 20 30 
+	10 10 20 20 30
+
+
+十一. 其他工具
+遍历：for_each
+
+tools.cpp
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <iterator>
+using namespace std;
+void print (int i) {
+	cout << i << ' ';
+}
+void add (int& i) {
+	++i;
+}
+template<typename IT, typename FN>
+void myForEach (IT begin, IT end, FN fn) {
+	while (begin != end)
+		fn (*begin++);
+}
+int main (void) {
+	int ai[] = {10, 20, 30, 40, 50};
+	for_each (ai, ai + 5, print);
+	cout << endl;
+	vector<int> vi (ai, ai + 5);
+	myForEach (vi.begin (), vi.end (),add);
+	myForEach (vi.begin (), vi.end (),print);
+	cout << endl;
+	int bi[5];
+	copy (ai, ai + 5, bi);
+	ostream_iterator<int> oit (cout, " ");
+	copy (bi, bi + 5, oit);
+	cout << endl;
+	return 0;
+}
+
+结果：	10 20 30 40 50 
+	11 21 31 41 51 
+	10 20 30 40 50 
+
+
+
+

@@ -1,0 +1,926 @@
+关键字：构造函数中初始化表  
+
+四. 类的定义与实例化
+2. 构造函数
+	4. 初始化表
+	   初始化表是类/*构造函数中*/的特殊结构，用于告诉编译器如何生成对成员变量进行初始化的代码。
+	
+	class 类名{
+		//构造函数
+		类名(形参表):成员变量1(初始值),成员变量2(初始值){
+		    ...	  //|<-----------初始化表------------>|
+		}
+		数据类型 成员变量1;
+		数据类型 成员变量2;
+	}
+
+
+
+#include<iostream>
+using namespace std;
+
+class Point{
+public:
+	/*
+	Point(int x,int y,int z){
+		m_x=x;
+		m_y=y;
+		m_z=z;
+	}
+	*/
+	Point(int x,int y,int z):
+		m_x(x),m_y(y),m_z(z){} //初始化表
+
+	Point(int x,int y):
+		m_x(x),m_y(y),m_z(0){}//初始化表
+
+	Point(int x):
+		m_x(x),m_y(0),m_z(0){}//初始化表
+		
+	Point(void):
+		m_x(0),m_y(0),m_z(0){}//初始化表
+
+	void draw(void){
+		cout<<"绘制点（"<< m_x<<'.'<<m_y<<'.'<<m_z<<"）"<<endl;
+	}
+private:
+	int m_x;
+	int m_y;
+	int m_z;
+};
+
+int main()
+{
+	Point p1(1,2,3),p2(4,5),p3(6),p4;
+	p1.draw();
+	p2.draw();
+	p3.draw();
+	p4.draw();
+	return 0;
+}
+
+结果：
+绘制点（1.2.3）
+绘制点（4.5.0）
+绘制点（6.0.0）
+绘制点（0.0.0）
+
+
+
+	
+	一般而言，对成员变量的初始化既可以在构造函数体中通过赋值完成，也可以在初始化表中完成，但是以下两种只能选择后者：
+	A.类数据类型的成员变量或基类型子对象，如果没有缺省构造函数，那么它们就只能在初始化表中，显式指明所要调用的有参构造函数版本   //数据类型是一个类中的数据类型 就要在初始化表中给初始值
+	B.类中的常量或者引用型成员变量，它们也只能通过初始化表指定初值。（常量在定义的同时就初始化）
+
+
+
+	类的成员变量按其在类中的声明顺序依次被初始化，而与其在初始化表中的排列顺序无关。初始化表并不是可执行语句，它的作用仅仅是指示编译器生成正确的初始化代码时所引用的初始值是什么。
+
+/////////////////////////////////////////////////////////////////init.app
+#include <iostream>
+using namespace std;
+class Point {
+public:
+	/*
+	Point (int x, int y, int z) {
+		m_x = x;
+		m_y = y;
+		m_z = z;
+	}
+	*/
+	Point (int x, int y, int z) :
+		m_x (x), m_y (y), m_z (z) {}
+	Point (int x, int y) :
+		m_x (x), m_y (y), m_z (0) {}
+	Point (int x) :
+		m_x (x), m_y (0), m_z (0) {}
+	Point (void) :
+		m_x (0), m_y (0), m_z (0) {}
+	void draw (void) {
+		cout << "绘制点(" << m_x << ','
+			<< m_y << ',' << m_z << ')'
+			<< endl;
+	}
+private:
+	int m_x;
+	int m_y;
+	int m_z;
+};
+
+class Integer {
+public:
+	Integer (int value) : m_value (value) {}
+	void set (int value) {
+		m_value = value;
+	}
+	int get (void) {
+		return m_value;
+	}
+private:
+	int m_value;
+};
+class Pair {
+public:
+	Pair (void) : m_first (0),	//Integer m_first; Integer m_second; 一个类的数据类型
+		m_second (0) {    	//数据类型是一个类中的数据类型 就要在初始化表中给初始值
+ 	
+	//类数据类型的成员变量或基类型子对象，如果没有缺省构造函数，那么它们就只能在初始化表中，显式指明所要调用的有参构造函数版本
+//		m_first (0); // ERROR
+//		m_first = 0; // ERROR
+	}
+	Pair (int first, int second) :
+		m_first (first),
+		m_second (second) {}
+	Integer m_first;
+	Integer m_second;
+};
+class A {
+public:
+	A (int var, int& ref) :
+		m_var (var), m_ref (ref) {}
+	int const m_var;
+	int& m_ref;
+};
+
+class Message {
+public:
+	Message (string const& str) :
+		m_str (str),			//常量在定义的同时就初始化 //常量不能先定义 之后再赋值
+//		m_len (m_str.length ()) {}	//面试题：初始化表的初始化顺序按下面声明的先后顺序
+		m_len (str.length ()) {}
+	size_t m_len;				//声明的顺序 先声明m_len,其次是m_str
+	string m_str;
+};
+
+int main (void) {
+	Point p1 (1, 2, 3), p2 (4, 5), p3 (6),
+		  p4;
+	p1.draw ();
+	p2.draw ();
+	p3.draw ();
+	p4.draw ();
+	Pair p5, p6 (7, 8);
+	cout << p5.m_first.get () << ' '
+		<< p5.m_second.get () << endl;
+	cout << p6.m_first.get () << ' '
+		<< p6.m_second.get () << endl;
+	int var = 100, ref = 200;
+	A a (var, ref);
+	cout << a.m_var << endl;
+	cout << a.m_ref << endl;
+	Message msg ("ABC");
+	cout << msg.m_len << ' ' << msg.m_str
+		<< endl;
+	return 0;
+}
+
+结果：	绘制点(1,2,3)
+	绘制点(4,5,0)
+	绘制点(6,0,0)
+	绘制点(0,0,0)
+	0 0
+	7 8
+	100
+	200
+	3 ABC
+
+
+
+五. 非内联的形式定义类
+
+内联形式定义：将类的构造函数和成员函数直接定义在类的声明中，这些函数只要不是递归函数也不是动态函数，编译器会缺省的将其以内联的方式进行优化。
+
+非内联形式定义： 将类的声明放在头文件(.h)中。
+		将类的实现，即函数定义，放在源文件中(.cpp)中。
+		而将对类的实例化再放在一个独立的源文件(.cpp)中。
+		现代版本的编译器，对非内联形式定义的类，也会进行必要的内联优化。
+
+	/////////////////////////////////////////////////////////////////student.h .cpp
+//student.h
+
+// 声明学生类
+#ifndef _STUDENT_H
+#define _STUDENT_H
+#include <string>
+using namespace std;
+// 学生
+class Student {
+public:
+	Student (string const& name, int age);	//构造函数声明
+	void who (void);
+	void eat (string const& food);
+	void learn (string const& course);
+	string m_name;
+	int m_age;
+};
+#endif // _STUDENT_H
+
+
+//student.cpp
+
+// 实现学生类
+#include <iostream>
+#include "student.h"
+Student::Student (string const& name,
+	int age) : m_name (name), m_age (age) {}
+/*
+void Student::who (void) {
+	cout << "我是" << m_name
+		<< "，今年" << m_age << "岁。"
+		<< endl;
+}
+*/
+extern "C" void _ZN7Student3whoEv (
+	Student* _this) {
+	cout << "我是" << _this->m_name
+		<< "，今年" << _this->m_age <<"岁。"
+	   	<< endl;
+}
+void Student::eat (string const& food) {
+	cout << "我吃" << food << "。" << endl;
+}
+void Student::learn (string const& course) {
+	cout << "我学" << course << "。" <<endl;
+}
+
+
+//main.cpp
+
+#include "student.h"
+int main (void) {
+	Student s1 ("张飞", 30);
+	s1.who ();
+//	_ZN7Student3whoEv (&s1);
+	s1.eat ("包子");
+	s1.learn ("C++");
+	Student* s2 = new Student ("赵云", 22);
+	s2->who ();
+//	_ZN7Student3whoEv (s2);
+	s2->eat ("面条");
+	s2->learn ("标C");
+	delete s2;
+	return 0;
+}
+
+
+
+六. this 指针
+
+1. 类的每个成员函数都有一个隐藏的指针型参数名为this，该指针指向调用这个成员函数的对象。类的构造和析构函数中同样有this指针，指向这个正在被构造或析构的对象。
+
+
+///this.cpp
+
+#include <iostream>
+using namespace std;
+class A {
+public:
+	A (void) {
+		cout << "构造函数: " << this
+			<< endl;
+	}
+	void foo (void) {
+//	void foo (A* this) {
+		cout << "foo: " << this << endl;
+	}
+};
+
+int main (void) {
+	A a;
+	cout << "main: " << &a << endl;
+	a.foo ();
+//	foo (&a);
+
+	return 0;
+}
+
+结果：
+	构造函数: 0xbfc0a34f
+	main: 0xbfc0a34f
+	foo: 0xbfc0a34f
+
+2. 在类的成员函数，构造函数以及析构函数中，对所有成员变量的访问，都是通过this指针进行的
+
+3. 多数情况下，并不需要显式地使用this指针，除非在以下上下文中：
+	A. 作用域名字冲突
+
+	class A{
+	public:
+		A (int data){
+			this->data=data;
+		}
+		int data;		//名字冲突
+	}
+
+	B. 从成员函数中返回调用对象的自拷贝或自引用  //自拷贝 自引用都需要返回this指针 返回内容需要*this
+
+	class A{
+	public:
+		A(int data){
+			this->data=data;
+		}
+		A inc(void){		//自拷贝
+			++data;
+			return *this;
+		}
+		A& dec(void){		//自引用
+			--data;
+			return *this;
+		}
+		int data;
+	}
+
+
+	C. 从成员函数内部向外传递调用对象自身
+
+	class A{
+	public:
+		A(int data){
+			this->data=data;
+		}
+		A inc(void){		
+			++data;
+			return *this;
+		}
+		A& dec(void){		
+			--data;
+			void print(A&);	//函数声明
+			print(*this);	//从成员函数内部向外传递调用对象本身
+			return *this;
+		}
+		int data;
+	}
+
+	void print(A& a){
+		cout<< "print:"<<a.data<<endl;
+	}
+
+
+
+少少少少少少少少少少少少少少少少少少少少少少少少少少。cpp
+#include <iostream>
+using namespace std;
+class A {
+public:
+	A (void) {
+		cout << "构造函数: " << this
+			<< endl;
+	}
+	void foo (void) {
+//	void foo (A* this) {
+		cout << "foo: " << this << endl;
+	}
+};
+class B {
+public:
+	B (int data) {
+		this->data = data;
+	}
+	B inc (void) {
+		++data;
+		return *this;
+	}
+	B& dec (void) {
+		--data;
+		void print (B&);
+		print (*this);
+		return *this;
+	}
+	int data;
+};
+void print (B& b) {
+	cout << "print: " << b.data << endl;
+}
+int main (void) {
+	A a;
+	cout << "main: " << &a << endl;
+	a.foo ();
+//	foo (&a);
+	B b (100);
+	cout << b.data << endl;
+	B b2 = b.inc ();
+	cout << b.data << ' ' << b2.data << endl;
+	b.dec ().dec ().dec ();
+	cout << b.data << endl; // 98
+	b.inc ().inc ().inc ();
+	cout << b.data << endl; // 101 ? 99  //因为自拷贝只是调用一次 只改变一次  不像自引用 是改变内存本身
+	return 0;
+}
+
+结果：	构造函数: 0xbfec270f
+	main: 0xbfec270f
+	foo: 0xbfec270f
+	100
+	101 101
+	print: 100
+	print: 99
+	print: 98
+	98
+	99
+
+
+
+七. 常函数
+1. 如果一个类的成员函数被声明为常函数，那么它的this指针就是一个常量指针，在该函数中一切试图修改成员变量的操作，都会被编译器视为非法。除非该变量带有 mutable 关键字。
+
+
+#include<iostream>
+using namespace std;
+
+class Student{
+public:
+	Student(string const& name,int age):
+		m_name(name),m_age(age){}
+
+	void print(void) const {    		//常函数  在 ) 和 { 之间 加 const
+//	void print(Student const* this)
+
+		cout<<m_name<<"."<<m_age/*++*/<<endl;
+
+		++m_times;	//在变量声明时加入 mutable 就可以忽略const的限定
+	//	++const_cast<Student*>(this)->m_time;
+
+	}	
+private:
+	string m_name;
+	int m_age;
+	mutable unsigned int m_times;
+};
+
+int main()
+{
+	Student s1("张飞",22);
+	s1.print();
+	return 0;
+}
+
+
+2. 原型相同的成员函数其常版本和非常版本可以构成重载关系，常对象，常引用，常指针匹配常版本。非常对象，非常引用，非常指针匹配非常版本。但是如果没有非常版本，那么非常对象，非常引用，非常指针也可以匹配常版本。
+					/* 非常 -> 常 */
+
+	常 -> 常
+	    /	
+	   /
+	非 -> 非
+
+#include<iostream>
+using namespace std;
+
+class Integer{
+public:
+	Integer(int i=0):m_i(i){}
+	int& value(void){               //非常版本
+		return m_i;
+	}
+	int const& value(void) const{   //常版本
+		return m_i;
+	}
+private:
+	int m_i;
+};
+
+
+int main()
+{
+	Integer i(100);
+	cout<<i.value()<<endl;  //100
+	i.value()=200;
+	cout<<i.value()<<endl; //200
+	Integer const& cr=i;
+	cout<<cr.value()<<endl;//200
+	return 0;
+}
+
+
+
+3. 只要一个类的成员函数不修改该类的任何成员变量，也不调用任何可能修改成员变量的成员函数，那么该成员函数就可以被声明为常函数。
+
+
+
+八. 析构函数
+1. 析构函数是类中特殊的成员函数
+	1. 函数名就是类名前面加"~";
+	2. 没有返回类型
+	3. 没有参数
+	4. 不能重载
+
+class 类名{
+public:
+	~类名(void){
+		析构函数体;
+	}
+}
+
+2. 析构函数在对象被销毁时由系统自动调用
+	1. 静态对象离开作用域时被销毁
+	2. 动态对象由 delete/delete[]操作符销毁
+	3. 析构函数在对象的整个生命周期中仅被调用一次
+
+
+3. 析构函数主要任务就是释放对象生命过程中所产生的资源
+
+
+4. 如果一个类没有显式定义析构函数，编译器也会提供一个缺省析构函数，该析构函数负责调用类数据类型成员变量和基类的析构函数，对于我们自己/*动态分配的资源不予理睬*/，因此有必要为这些资源编写字节的析构函数，予以释放，防止出现内存泄漏。 
+
+#include<iostream>
+#include<cstring>
+using namespace std;
+
+class String{
+public:
+	//有参构造函数
+	String(char const* str=NULL){
+		m_str=new char[strlen(str?str:"")+1];
+		strcpy(m_str,str?str:"");
+	}
+
+	//析构函数
+	~String(void){
+		if(m_str){
+			delete[] m_str;
+			m_str=NULL;
+		}
+	}
+private:
+	char* m_str;
+};
+
+int main(void)
+{
+	String str1("Hello World!");
+	cout<<str1.c_str()<<endl;
+	
+	return 0;
+}
+
+
+
+
+九. 支持深拷贝的拷贝构造拷贝赋值
+
+1. 编译器提供的缺省拷贝只对对象进行浅拷贝，指针类型的成员只是按字节复制其本身，而不复制其目标内容，这样的结果就是，拷贝目标对象和拷贝源对象共享一份内容资源，不仅发生资源耦合，而且还有double free异常的风险。
+
+2. 通过自己定义拷贝构造函数和拷贝赋值操作符函数，可以实现同类型对象间的深拷贝语义，即分配独立资源并复制内容，既保证拷贝目标对象和源对象不发生资源耦合，同时避免了double free异常的风险。
+
+3. 只要一个类含有指针型成员变量，而且该变量所指向的内存是该类动态产生的，那么就有必要为其定义支持深拷贝的拷贝构造函数和拷贝赋值操作符函数。
+
+4. 拷贝构造和赋值不仅开销巨大而且还有浅拷贝的风险，因此应该尽可能避免出现拷贝构造和赋值。
+	比如通过引用传递参数，或者从函数返回。
+
+
+
+#include <cstring>
+#include <iostream>
+using namespace std;
+class String {
+public:
+	// 有参构造函数
+	String (char const* str = NULL) :
+		m_str (strcpy (new char[
+			strlen (str ? str : "") + 1],
+			str ? str : "")) {}
+	/*
+	// 缺省拷贝构造函数————浅拷贝
+	String (String const& that) :
+		m_str (that.m_str) {}
+	*/
+	// 自定义拷贝构造函数————深拷贝
+	String (String const& that) :
+		m_str (strcpy (new char[
+			strlen (that.m_str) + 1],
+			that.m_str)) {}
+	// 拷贝赋值操作符函数————深拷贝
+	/*
+	// 菜鸟版
+	void operator= (String const& that) {
+		m_str = new char[
+			strlen (that.m_str) + 1];
+		strcpy (m_str, that.m_str);
+	}
+	// 小鸟版
+	String& operator= (String const& that) {
+		// 防止自赋值
+		if (&that != this) {
+			// 释放旧资源
+			delete[] m_str;
+			// 分配新资源
+			m_str = new char[
+				strlen (that.m_str) + 1];
+			// 复制新内容
+			strcpy (m_str, that.m_str);
+		}
+		// 返回自引用
+		return *this;
+	}
+	// 大鸟
+	String& operator= (String const& that) {
+		if (&that != this) {
+			char* str = new char[
+				strlen (that.m_str) + 1];
+			delete[] m_str;
+			m_str = strcpy (str, that.m_str);
+		}
+		return *this;
+	}
+	*/
+	// 老鸟
+	String& operator= (String const& that) {
+		if (&that != this) {
+			String str = that;
+			swap (m_str, str.m_str);
+		}
+		return *this;
+	}
+	// 析构函数
+	~String (void) {
+		if (m_str) {
+			delete[] m_str;
+			m_str = NULL;
+		}
+	}
+	char const* c_str (void) const {
+		return m_str;
+	}
+private:
+	char* m_str;
+};
+int main (void) {
+	String str1 ("Hello, World !");
+	cout << str1.c_str () << endl;
+	String str2 = str1; // 拷贝构造
+	cout << str2.c_str () << endl;
+	String str3 ("呵呵");
+	str2 = str3; // 拷贝赋值
+//	str2.operator= (str3);
+//	str2 = str2;
+	cout << str2.c_str () << endl;
+	int a = 10, b = 20, c = 30;
+	(a = b) = c;
+	cout << a << endl; // 30
+	return 0;
+}
+
+
+
+
+
+
+//作业:实现一个整型数组类，通过构造函数指定容量
+//拷贝构造和拷贝赋值需要支持深拷贝语义
+//接口：push 在数组的尾部存入一个元素
+    //pop 从数组的尾部弹出一个元素
+    //get 根据下标获取一个元素
+    //set 根据下标修改一个元素
+
+    //clear 清空数组
+    //empty 判断数组是否空
+    //find 返回指定元素第一次出现的下标
+    //replace 全部替换
+    //reverse 逆转
+    //sort 从小到大排序
+    //print 打印
+
+
+#include<iostream>
+using namespace std;
+
+class Array{
+private:
+	int* m_data; //数据指针
+	int m_size;	//数组大小
+	int m_top;
+	
+public:
+	//构造函数
+	Array(int size):
+		m_data(new int[size]),
+		m_size(size),m_top(0){}
+
+	//拷贝构造
+	Array(Array const& that):
+		m_data(new int[that.m_size]),
+		m_size(that.m_size),
+		m_top(that.m_top)
+	{
+		for(int i=0;i<that.m_top;++i)
+			m_data[i]=that.m_data[i];
+	}
+
+	//拷贝赋值
+	Array& operator=(Array const& that){
+		if(&that!=this){
+			if(m_data){
+				delete[] m_data;
+				m_data=NULL;
+			}
+			m_data=new int[that.m_size];
+			for(int i=0;i<that.m_top;++i)
+				m_data[i]=that.m_data[i];
+			m_size=that.m_size;
+			m_top=that.m_top;
+		}
+	}
+	//析构函数
+	~Array(void){
+		if(m_data){
+			delete[] m_data;
+			m_data=NULL;
+		}
+	}
+	//在数组尾部存入一个元素
+	bool push(int item){
+		if(m_top>=m_size)
+			return false;
+		m_data[m_top++]=item;
+		return true;
+	}
+
+	//从数组尾部弹出一个元素
+	bool pop(int& item){
+		if(m_top<=0)
+			return false;
+		item=m_data[--m_top];
+		return true;
+	}
+
+	//根据下标获取一个元素
+	bool get(int index,int& item) const{
+		if(index<0||m_top<=index)
+			return false;
+		item=m_data[index];
+		return true;
+	}
+
+	//根据下标修改一个元素
+	bool set(int index,int item){
+		if(index<0||m_top<=index)
+			return false;
+		m_data[index]=item;
+		return true;
+	}
+
+	//情况数组
+	void clear(void){
+		if(m_top>0)
+			m_top=0;
+	}
+
+	//判断是否为空
+	bool empty(void) const{
+		return m_top<=0;
+	}
+
+	//返回指定元素第一出现的下标
+	int find(int item){
+		for(int i=0;i<m_top;++i)
+			if(m_data[i]==item)
+				return i;
+		return -1;
+	}
+
+	//替换：将数组中所有给定值全部替换为另一个值
+	void replace(int search,int replaced){
+		for(int i=0;i<m_top;++i)
+			if(m_data[i]==search)
+				m_data[i]=replaced;
+	}
+
+	//逆转
+	void reverse(void){
+		int mid=m_top/2;
+		for(int i=0;i<mid;++i){
+			int temp=m_data[i];
+			m_data[i]=m_data[m_top-1-i];
+			m_data[m_top-1-i]=temp;
+		}
+	}
+
+	//排序
+	void sort(void){
+		for(int i=0;i<m_top-1;++i){
+			bool ok=true;
+			for(int j=0;j<m_top-1-i;++j)
+				if(m_data[j]>m_data[j+1]){
+					int temp=m_data[j];
+					m_data[j]=m_data[j+1];
+					m_data[j+1]=temp;
+					ok=false;
+				}
+			if(ok)
+				break;
+		}
+	}
+
+	//打印
+	void print(void) const{
+		for(int i=0;i<m_top;++i)
+			cout<<m_data[i]<<' ';
+		cout<<endl;
+	}
+};
+	
+
+int main()
+{
+	Array a(10);
+	for(int i=200;i>=100;i-=10)
+		if(!a.push(i))
+			cout<<"Array::push() fail"<<endl;
+	a.print();
+	
+	for(int i=0;i<=10;++i){
+		int item;
+		if(!a.pop(item))
+			cout<<"Array::pop() fail!"<<endl;
+		else
+			cout<<item<<endl;
+	}
+
+	for(int i=200;i>100;i-=10)
+		a.push(i);
+	a.print();
+
+	for(int i=0;i<=10;++i){
+		int item;
+		if(!a.get(i,item))
+			cout<<"Array::get() fail!"<<endl;
+		if(!a.set(i,item+1))
+			cout<<"Array::set() fail!"<<endl;
+	}
+	a.print();
+	cout<<a.find(151)<<endl;
+	cout<<a.find(150)<<endl;
+
+	a.set(1,150);
+	a.set(3,150);
+	a.set(5,150);
+	a.set(7,150);
+	a.set(9,150);
+	a.print();
+	a.replace(150,250);
+	a.print();
+	a.sort();
+	a.print();
+	a.reverse();
+	a.print();
+	cout<<boolalpha<<a.empty()<<endl;
+	a.clear();
+	cout<<a.empty()<<endl;
+	a.push(345);
+	a.push(621);
+	a.push(178);
+	a.push(436);
+	a.sort();
+	int item;
+	a.pop(item);
+	a.print();
+	Array b=a;
+	b.print();
+	b.push(872);
+	b.push(233);
+	b.sort();
+	b.print();
+	a=b;
+	a.print();
+	return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

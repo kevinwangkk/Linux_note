@@ -1,0 +1,197 @@
+关键字：create  drop  创建 销毁 
+	insert  delete  update   插入  删除  增加
+	commit       提交
+	rollback     撤销
+	savepoint    保存点
+
+/*三. 表操作*/
+
+/*3.1 创建表和删除表*/
+1. 标识符的命名
+	a.大小写 英文字母 0-9 _ $ #
+	b.不能用数字开头
+	c.命名长度 1-30 位
+	d.不能和关键字 或 其他的对象重名
+	作用：给表，字段，数据库对象命名
+
+2. 创建表的语法
+	create  table 表名(
+		字段名1 数据类型，
+		字段名2 数据类型，
+		... ...
+		字段n   数据类型		
+	);
+
+	编号 number
+	姓名 varchar2 长度25位
+	工资 number 保留2位小数点
+	入职日期 date	
+	create table emp_wkw(
+		id number(5),
+		name varchar2(25),
+		salary number(10,2),
+		start_date date
+	);
+	
+
+3. 删除表
+	drop table 表名；
+	drop table emp_wkw;	
+
+
+/*3.2 DML语句*/
+insert delete update
+
+1. insert 语句
+
+	insert into 表名[(字段列表)] values(值列表);
+
+
+	insert into emp_wkw (id,name,salary,start_date)
+	  values(1,'Tom',1000,sysdate);
+	commit;
+
+	insert into emp_wkw (id,name,salary,start_date)
+	  values(2,'jerry',1200,to_date('2016-01-05','yyyy-mm-dd'));
+	commit;
+
+	当值列表的数量和顺序和表定义一致，可以省略字段列表
+	insert into emp_wkw 
+	  values(3,'jerr',1200,to_date('2016-01-05','yyyy-mm-dd'));
+	commit;
+
+
+	当值列表没有给所有的字段传值时，字段列表不能省略
+	字段列表的顺序和内容要和值列表一致
+	insert into emp_wkw (id,name,salary)
+	  values(4,'jery',1200);
+	commit;
+
+	insert into emp_wkw 
+	  values(4,'jry',1200，null);
+	commit;
+
+
+2. delete 语句
+	
+	delete from 表名[where 条件]; 	--没有where子句的delete语句 清空表中全部数据
+	
+	delete from emp_wkw;
+	rollback;		--事务处理语句 回滚 撤销操作
+
+3. update 语句
+	
+	update 表名 set 字段1 = 更新值1,字段2=更新值2
+	 [where 条件];
+
+
+	update emp_wkw set salary = salary+100;
+	commit;
+
+
+
+/*3.3 TCL语句*/
+1. 事务控制语句的含义
+	commit;		--确认事务的操作
+	rollback；	--回滚事务的操作（撤销刚才的操作）
+	savepoint n;	--保存点  回滚到保存点为n rollback to n
+	rollback to n   --回滚到保存点为n 
+2. 事务的四大特征
+	1.原子性
+		事务中的语句是一个不可分割的整体
+	转账：
+		update account set balance =balance-2000
+			where a_no=1;
+		update account set balance =balance+2000
+			where a_no=2;
+	多条语句要么一起成功 要么一起失败
+
+	2.隔离性
+		一个事务中的语句，在没有提交之前，这个语句所引起的数据的变化，对另一个事务而言是不可见的
+
+	3.持久性
+	4.一致性
+
+
+总结：
+select 语句：和事务无关
+ddl语句：自动提交			create  drop  alter  创建 销毁 修改
+dml语句：默认不是自动提交 手动提交	insert  delete  update   插入  删除  增加
+
+
+作业：
+1.列出编号43的部门的人数，最高工资，最低工资，总工资，平均工资
+	select count(id),max(salary),min(salary),sum(salary),avg(salary)
+	 from s_emp
+	   where dept_id=43;
+
+2.按照部门分组，显示人数大于2每个部门的名称和人数
+	select title,count(id)
+	 from s_emp
+	   group by title
+	     having count(id)>2;
+
+3.查询工资高于 ‘Ben’的员工信息
+	select id,first_name,salary
+	  from s_emp
+	   where salary>(select salary from s_emp where first_name='Ben');	
+
+4.使用子查询分别列出领导的信息和普通员工的信息
+	select id,first_name,salary
+	 from s_emp
+	  where id in(select distinct manager_id from s_emp);
+
+	select id,first_name,salary
+	 from s_emp
+	  where id not in(select distinct manager_id from s_emp where manager_id is not null);
+
+5.列出所有平均工资高于42部门的平均工资的部门信息
+	select title,avg(salary)
+	 from s_emp
+	  group by title
+	   having avg(salary)>(select avg(salary) from s_emp where dept_id=42);
+
+6.用子查询列出员工的first_name 部门的name 地区的name
+/*	select first_name,title,s_region.name
+	 from s_emp,s_region,s_dept
+	  where id not in(select distinct manager_id from s_emp where manager_id is not null)
+		or  s_emp.dept_id=s_dept.id or s_dept.region_id= s_region.id;
+    --error
+*/
+	select first_name,title,s_region.name
+	 from(select id,dept_id,first_name,salary,title
+	 	from s_emp
+	  	  where id not in(select distinct manager_id from s_emp where manager_id is not null)),s_dept,s_region
+	  where dept_id=s_dept.id or s_dept.region_id= s_region.id;
+
+	
+
+7.创建如下数据表 表名：student_名字_编号
+ stuNO：number 	Name：varchar2(25)
+ Birthday：date Address：varchar2(50)
+ Phone：varchar2(20)
+	插入3条测试数据
+	将编号为2的学生的地址更改为null
+	删除表中编号为3的数据
+
+	create table student_wkw(
+		stuNO number(5),
+		name varchar2(25),
+		birthday date,
+		Address varchar2(50),
+		phone varchar2(20)
+	);
+
+	insert into student_wkw values(1,'jerr',to_date('2016-01-05','yyyy-mm-dd'),'wathton','1330020000');
+	insert into student_wkw values(2,'jerry',to_date('2016-01-05','yyyy-mm-dd'),'wathton','1330200000');	
+	insert into student_wkw values(3,'jerryy',to_date('2016-01-05','yyyy-mm-dd'),'wathton','1331000000');
+ 	commit;
+	
+	update student_wkw set address = 'null' where stuno=2;
+	commit;
+
+	delete  from student_wkw where stuno=3;
+	commit;
+
+
+

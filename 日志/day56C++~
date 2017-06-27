@@ -1,0 +1,1021 @@
+关键字：运行时类型信息 typeid dynamic_cast  虚析构  异常处理 异常流程 异常的说明 异常的特殊用法
+
+七. 运行时类型信息
+1. typeid 操作符
+	typeid 操作符可以作用于任何类型的对象或变量，既可以是类类型的，也可以是基本类型的。
+
+	该操作符会返回一个类型为typeinfo的对象的常引用，通过该对象可以获得有关类型的信息。
+
+	typeinfo::name() : 返回类型名标签
+	typeinfo::operator ==/!= : 类型比较
+	
+	typeid 操作符既可以在静态模式下工作，获取有关类型的静态信息，也可以在动态模式下工作，获取运行时类型信息。但是为了获取运行时类型信息，必须存在多态继承。
+
+typeid.cpp
+
+#include <iostream>
+#include <typeinfo>
+#include <cstring>
+using namespace std;
+// 只有基类中函数(纯)虚函数的继承关系
+// 叫做多态继承
+class A {};
+class B : public A { 			// B从A普通继承
+	virtual void foo (void) {}
+};
+class C : public B {}; 			// C从B多态继承
+class D : public C {}; 			// D从C多态继承
+void foo (B* pb) {
+//	if (! strcmp (typeid (*pb).name (),
+//		"1B"))
+	if (typeid (*pb) == typeid (B))
+		cout << "BB..." << endl;
+	else
+//	if (! strcmp (typeid (*pb).name (),
+//		"1C"))
+	if (typeid (*pb) == typeid (C))
+		cout << "CC..." << endl;
+	else
+//	if (! strcmp (typeid (*pb).name (),
+//		"1D"))
+	if (typeid (*pb) == typeid (D))
+		cout << "DD..." << endl;
+} 
+int main (void) {
+	cout << typeid (void).name () << endl;		//v
+	cout << typeid (void*).name () << endl;		//Pv
+	cout << typeid (void**).name () << endl;	//PPv
+	cout << typeid (char).name () << endl;		//c
+	cout << typeid (unsigned char).name ()		//h
+		<< endl;
+	cout << typeid (short).name () << endl;		//s
+	cout << typeid (unsigned short).name ()		//t
+		<< endl;
+	cout << typeid (int).name () << endl;		//i
+	cout << typeid (unsigned int).name ()		//j
+		<< endl;
+	cout << typeid (long).name () << endl;		//l
+	cout << typeid (unsigned long).name ()		//m
+		<< endl;
+	cout << typeid (long long).name ()		//x
+		<< endl;
+	cout << typeid (
+		unsigned long long).name () << endl;	//y
+	cout << typeid (bool).name () << endl;		//b
+	cout << typeid (float).name () << endl;		//f
+	cout << typeid (double).name () << endl;	//d
+	cout << typeid (long double).name ()		//e
+		<< endl;
+
+	string sa[10];	
+	cout << typeid (sa).name () << endl;		//A10_Ss
+	char ca[10];
+	cout << typeid (ca).name () << endl;		//A10_c
+	char* pa[10];
+	cout << typeid (pa).name () << endl;		//A10_Pc
+	char (*ap)[10];
+	cout << typeid (ap).name () << endl;		//PA10_c
+
+	const char* cp;
+	cout << typeid (cp).name () << endl;		//PKc
+	char const* cc;
+	cout << typeid (cc).name () << endl;		//PKc
+	char* const pc = NULL;
+	cout << typeid (pc).name () << endl;		//Pc
+	char const* const ccc = NULL;
+	cout << typeid (ccc).name () << endl;		//PKc
+
+	void (*p1) (void);
+	cout << typeid (p1).name () << endl;		//PFvvE
+	void (*p2) (int*(*)(short*));
+	cout << typeid (p2).name () << endl;		//PFvPFPiPsEE
+	// p3是一个指向以函数指针为参数同时返回
+	// 函数指针的函数的指针
+	long*(*(*p3)(int*(*)(short*)))(char*);		
+	cout << typeid (p3).name () << endl;		//PFPFPlPcEPFPiPsEE
+
+	cout << typeid (long*(*(*)(
+		int*(*)(short*)))(char*)).name ()	//PFPFPlPcEPFPiPsEE
+		<< endl;
+
+	B b;
+	A& ra = b;
+	// 普通继承，取静态类型————A
+	cout << typeid (ra).name () << endl;		//1A
+	C c;
+	B& rb = c;
+	// 多态继承，取动态类型————C
+	cout << typeid (rb).name () << endl;		//1C
+	A* p4 = &c;
+	cout << typeid (*p4).name () << endl;		//1A
+	foo (&b);					//BB...
+	foo (&c);					//CC...
+	foo (new D);					//DD...
+	return 0;
+}
+
+
+
+2. dynamic_cast 动态类型转换
+
+	将多态基类的指针或引用 造型(转换) 为其子类类型的指针或者引用，如果该指针或引用的目标对象确实为所要求的类型，造型(转换)成功，否则失败（指针：返回空指针 或 引用：抛出异常）
+
+
+dynamic.cpp
+
+#include <iostream>
+using namespace std;
+// A->B->C
+// D
+class A { virtual void foo (void) {} };
+class B : public A {};
+class C : public B {};
+class D {};
+int main (void) {
+	B b;
+	A* pa = &b;
+	// B是A的后代类，编译成功，安全
+	B* pb = static_cast<B*> (pa);	
+	cout << "pb = " << pb << endl;	//pb = 0xbfa10ed0
+	// C是A的后代类，编译成功，危险
+	C* pc = static_cast<C*> (pa);
+	cout << "pc = " << pc << endl;	//pc = 0xbfa10ed0
+//	编译失败，安全
+//	D* pd = static_cast<D*> (pa);
+//	cout << "pd = " << pd << endl;
+
+	// pa指向是B对象，成功，安全
+	pb = dynamic_cast<B*> (pa);
+	cout << "pb = " << pb << endl;
+	// pa指向非C对象，失败，安全
+	pc = dynamic_cast<C*> (pa);
+	cout << "pc = " << pc << endl;	//pc = 0
+	A& a = b;
+	try {
+		C& c = dynamic_cast<C&> (a); 
+	}
+	catch (exception& ex) {
+		cout << ex.what () << endl;	////std::bad_cast
+	}
+	// pa指向非D对象，失败，安全
+	D* pd = dynamic_cast<D*> (pa);
+	cout << "pd = " << pd << endl;		//pd = 0
+
+	// 编译期、运行时均不检查，成功，危险
+	pb = reinterpret_cast<B*> (pa);
+	cout << "pb = " << pb << endl;	//pb = 0xbfa10ed0
+	pc = reinterpret_cast<C*> (pa);
+	cout << "pc = " << pc << endl;	//pc = 0xbfa10ed0
+	pd = reinterpret_cast<D*> (pa);
+	cout << "pd = " << pd << endl;	//pd = 0xbfa10ed0
+	return 0;
+}
+
+
+
+
+八. 虚析构
+1. delete一个指向子类对象的基类指针，实际被调用的仅仅是基类的析构函数，该函数只负责析构子类对象中的基类子对象，而基类的析构函数不会调用子类的析构函数，因此在子类中分配的资源将形成内存泄漏。
+
+2. 如果将基类的析构函数声明虚函数，即虚析构，那么当delete一个指向子类对象的基类指针时，实际被调用的将是子类的析构函数。子类的析构函数将首先析构子类对象的扩展部分，然后再通过基类的析构函数析构该对象的基类部分，最终实现完美的资源释放。
+
+3. 没有分配任何资源的类，无需定义析构函数。没有定义析构函数的类，编译器会为其提供一个缺省析构函数，但缺省析构函数不是虚函数。为了保证delete一个指向子类对象的基类指针时，能够正确调用子类的析构函数，就必须把基类的析构函数声明为虚函数，即使它是一个什么也不做的空函数，谓之空虚析构。
+
+4. 一般而言，只要一个类包含了虚函数，而且有可能从该类派生出子类，那么就应该将该类的析构函数声明为虚函数，至少不会有坏处。
+
+
+	那些函数可以是虚函数？
+	全局函数		（不能虚）
+	静态成员函数		（不能虚）
+0	非静态成员函数		（可以虚）0
+	构造函数		（不能虚）
+0	析构函数		（可以虚）0
+0	成员函数形式的操作符函数	（可以虚）0
+	友元函数形式的操作符函数	（不能虚）
+
+
+vdec.cpp
+
+#include <cstdio>
+#include <iostream>
+using namespace std;
+/*
+class A {
+public:
+	A (void) : m_buf (new char[1024]) {
+		cout << "分配内存：" << (void*)m_buf
+			<<endl;
+	}
+	// 虚析构
+	virtual ~A (void) {
+		cout << "释放内存：" << (void*)m_buf
+			<<endl;
+		delete[] m_buf;
+	}
+private:
+	char* m_buf;
+};
+*/
+class A {
+public:
+	// 空虚析构
+	virtual ~A (void) {}
+private:
+	char m_buf[1024];
+};
+class B : public A {
+public:
+	B (void) : m_fp (fopen ("aaa", "w+")) {
+		cout << "打开文件：" << m_fp << endl;
+	}
+	~B (void) {
+		cout << "关闭文件：" << m_fp << endl;
+		fclose (m_fp);
+	}
+private:
+	FILE* m_fp;
+};
+int main (void) {
+	/*
+	B* pb = new B;
+	// ...
+	delete pb; // B::~B()->A::~A()
+	*/
+
+	/*
+	A* pa = new B;
+	// ...
+//	delete pa; // A::~A()
+	delete static_cast<B*> (pa); // B::~B()->A::~A()
+	*/
+
+	A* pa = new B;
+	// ...
+	delete pa; // B::~B()->A::~A()
+	return 0;
+}
+
+
+
+
+
+九. 异常
+1. 异常的作用
+解决在分析，设计，编码和测试阶段都无法预见的故障和错误。
+
+2. 异常的处理
+
+	1. 通过返回值表示异常
+	利：调用路径中各级函数的局部对象都能得到正确的析构
+	弊：调用路径中逐层判断返回值，流程复杂，源代码量大
+
+
+return.cpp
+
+#include <cstdio>
+#include <iostream>
+using namespace std;
+class A {
+public:
+	A (void) { cout << "A构造" << endl; }
+	~A (void) { cout << "A析构" << endl; }
+};
+int foo (void) {
+	A a;
+	FILE* fp = fopen ("none", "r");
+	if (! fp) {
+		perror ("fopen");
+		return -1;
+	}
+	// ...
+	fclose (fp);
+	return 0;
+}
+int bar (void) {
+	A a;
+	// ...
+	if (foo () == -1)
+		return -1;
+	// ...
+	return 0;
+}
+int hum (void) {
+	A a;
+	// ...
+	if (bar () == -1)
+		return -1;
+	// ...
+	return 0;
+}
+int main (void) {
+	A a;
+	// ...
+	if (hum () == -1) {
+		cout << "失败！" << endl;
+		return -1;
+	}
+	// ...
+	cout << "成功！" << endl;
+	return 0;
+}	
+
+
+
+
+	2. 通过setjmp/longjmp远程跳转处理异常    //这个可以跨函数使用  goto不可以跨函数使用
+	利：无需逐层判断返回值，流程简单，源代码量小
+	弊：调用路径中各级函数的局部对象得不到正确的析构
+
+
+longjmp.cpp
+
+#include <cstdio>
+#include <csetjmp>
+#include <iostream>
+using namespace std;
+jmp_buf g_env;
+class A {
+public:
+	A (void) { cout << "A构造" << endl; }
+	~A (void) { cout << "A析构" << endl; }
+};
+void foo (void) {
+	A a;
+	FILE* fp = fopen ("none", "r");
+	if (! fp) {
+		perror ("fopen");
+		longjmp (g_env, 100);   //longjmp
+	}
+	// ...
+	fclose (fp);
+}
+void bar (void) {
+	A a;
+	// ...
+	foo ();
+	// ...
+}
+void hum (void) {
+	A a;
+	// ...
+	bar ();
+	// ...
+}
+int main (void) {
+	A a;
+	// ...
+	if (setjmp (g_env) == 100) {	//setjmp
+		cout << "失败！" << endl;
+		return -1;
+	}
+	// ...
+	hum ();
+	// ...
+	cout << "成功！" << endl;
+	return 0;
+}
+
+
+
+	3. C++异常——————两全其美的解决之道
+	既无需逐层判断返回值，流程简单，源代码量小，同时沿着函数调用的逆序做调用栈的辗转开解（即依次执行调用路径中每个函数的右花括号），保证所有的局部对象都能得到正确的析构。
+
+
+
+3. 异常语法
+	1. 抛出异常：throw 异常对象；
+
+	异常对象既可以是基本类型，也可以是类数据类型
+	throw -1;
+	throw"文件打开失败！";
+	throw FileError(...); 	//抛出匿名对象（建议）
+	FileError ex(...);
+	throw ex;	//抛出有名对象（不推荐）
+
+
+	2. 捕获异常
+
+	try{
+		写可能抛出异常的语句；	
+	}
+	catch(异常类型1& 异常对象){
+		针对异常类型1的异常处理;
+	}
+	catch(异常类型2& 异常对象){
+		针对异常类型2的异常处理;
+	}
+	.....
+
+	catch(...){
+		处理其他异常;
+	}
+
+
+exception.cpp
+
+#include <cstdio>
+#include <iostream>
+using namespace std;
+class A {
+public:
+	A (void) { cout << "A构造" << endl; }
+	~A (void) { cout << "A析构" << endl; }
+};
+void foo (void) {
+	A a;
+	cout << "调用fopen前" << endl;
+	FILE* fp = fopen ("none", "r");
+	if (! fp) {
+		perror ("fopen");
+		throw 100;
+	}
+	cout << "fopen成功" << endl;
+	fclose (fp);
+}
+void bar (void) {
+	A a;
+	cout << "调用foo前" << endl;
+	foo ();
+	cout << "调用foo后" << endl;
+}
+void hum (void) {
+	A a;
+	cout << "调用bar前" << endl;
+	bar ();
+	cout << "调用bar后" << endl;
+}
+int main (void) {
+	try {
+		A a;
+		cout << "调用hum前" << endl;
+		hum ();
+		cout << "调用hum后" << endl;
+	}
+	catch (int ex) {
+		cout << "失败！" << endl;
+		cout << "ex = " << ex << endl;
+		return -1;
+	}
+	cout << "成功！" << endl;
+	return 0;
+}
+
+结果：	A构造
+	调用hum前
+	A构造
+	调用bar前
+	A构造
+	调用foo前
+	A构造
+	调用fopen前
+	fopen: No such file or directory
+	A析构
+	A析构
+	A析构
+	A析构
+	失败！
+	ex = 100
+
+结果2：touch none
+
+	A构造
+	调用hum前
+	A构造
+	调用bar前
+	A构造
+	调用foo前
+	A构造
+	调用fopen前
+	fopen成功
+	A析构
+	调用foo后
+	A析构
+	调用bar后
+	A析构
+	调用hum后
+	A析构
+	成功！
+
+
+
+4. 异常流程
+	1. 不发生异常时
+	两个执行：throw 之后的代码执行，try 块中引发异常语句的之后的代码执行。
+
+	两个不执行：throw 语句不执行，catch 块不执行。
+
+	2. 发生异常时
+	两个执行：throw 语句执行，catch 块执行。
+
+	两个不执行：throw 之后的代码不执行，try 块中引发异常语句的之后的代码不执行。
+
+
+	检查异常条件 -> 执行throw语句 ->沿着所调函数的右花括号一路回溯，析构局部对象 -> 直到try的右花括号 -> 匹配catch块的异常类型 -> 执行catch块中的代码，处理所捕获的异常 -> 执行try-catch结构以后的代码。 
+
+
+5. 异常说明
+	1. 异常说明是函数原型的一部分，旨在说明函数可能抛出的异常范围 
+
+	函数原型：返回类型+函数名+形参表+常属性+异常说明
+	
+	异常说明：throw（异常类型表）
+
+	void foo(int x,int y) throw(MemoryError,FileError,DivedByZero){
+    	...
+    	void* pv = malloc (1024);
+    	if (! pv)
+        	throw MemoryError (...);
+    	...
+    	FILE* fp = fopen ("none", "r");
+    	if (! fp)
+        	throw FileError (...);
+    	...
+    	if (y == 0)
+        	throw DivedByZero (...);
+    	...
+	}
+
+	异常说明是一种承诺，承诺函数不会抛出异常说明以外的异常类型。如果函数违背承诺，抛出了异常说明以外的异常，那么所抛出的异常无法被该函数的调用者捕获，最终这些异常会被C++标准库捕获，捕获后会直接杀灭进程，同时将与该异常有关的类型信息打印在标准输出（1）或标准出错（2）上。
+
+
+throw.cpp
+
+#include <iostream>
+using namespace std;
+//void foo (int arg) throw (int, double,
+//	char const*) {
+//void foo (int arg) throw (int, double,
+//	char const*, string) {
+//void foo (int arg) throw () {
+
+void foo (int arg) {
+	switch (arg) {
+		case 1:
+			throw 123;
+		case 2:
+			throw 4.5;
+		case 3:
+//			throw "出错啦！";
+			throw string ("出错啦！");
+	}
+	cout << "成功返回。" << endl;
+}
+
+class Base {
+public:
+	Base (void) : m_p (new int[256]) {}
+	virtual ~Base (void) throw () {		//加throw() 不抛出任何异常
+		delete[] m_p;
+	}
+	virtual void foo (void)
+		throw (int, double) {}
+private:
+	int* m_p;
+};
+
+class Derived : public Base {
+public:
+	~Derived (void) throw () {}		//必须写这个 编译器提供的缺省析构函数 不带有throw() 
+						//那么子类版本比基类版本抛出更多的异常 
+
+	void foo (void)
+//		throw (double, int) {}	//没问题
+//		throw (double) {}	//没问题
+//		throw (double, int, string) {} // 错  	//抛出更多异常
+//		throw (string) {} // 错			//抛出不属于基类中的异常
+//		{} // 错
+		throw () {}
+private:
+	string m_var;
+};
+int main (void) {
+	int var;
+	cin >> var;
+	try {
+		foo (var);
+	}
+	catch (int ex) {
+		cout << "整型异常：" << ex << endl;
+	}
+	catch (double ex) {
+		cout << "双精度异常：" << ex << endl;
+	}
+	/*
+	catch (char const* ex) {
+		cout << "字符串异常：" << ex << endl;
+	}
+	*/
+	catch (string& ex) {
+		cout << "字符串异常：" << ex << endl;
+	}
+	return 0;
+}
+
+
+
+	2. 异常说明的两个特殊形式
+	A. throw() - 该函数不抛出异常
+
+	B. 没有异常说明 - 该函数可以抛出任何异常
+	
+
+	3. 如果基类中的虚函数带有异常说明，那么该函数在子类中的覆盖版本的异常说明不能比基类版本抛出更多的异常。
+
+
+
+6. 异常的特殊用法
+
+	1. 不处理异常：如果一个函数对于可能引发的异常不予捕获，那么该异常会向这个函数的调用者继续抛出，直到被捕获。如果直到main函数也没有捕获到此异常，那么C++标准库会捕获它，同时杀灭进程。
+
+	2. 捕获并继续抛出异常：在catch块中继续抛出所捕获的异常。throw;
+
+
+continue.cpp
+
+#include <iostream>
+using namespace std;
+
+class A {
+public: A (void) { cout << "A构造" << endl; }
+	~A (void) { cout << "A析构" << endl; }
+};
+
+class B {
+public: B (void) { cout << "B构造" << endl; }
+	~B (void) { cout << "B析构" << endl; }
+};
+
+void hum (void) {
+	throw -1;
+}
+
+void bar (void) {
+	B* pb = new B;
+	try {
+		hum ();
+	}
+	catch (int ex) {
+		delete pb;
+//		return;
+//		throw ex;
+		throw;
+	}
+	delete pb;
+	// ...
+}
+
+void foo (void) {
+	A* pa = new A;
+	try {
+		bar ();
+	}
+	catch (int ex) {
+		delete pa;
+		return;
+	}
+	delete pa;
+	// ...
+}
+int main (void) {
+	try {
+		foo ();
+	}
+	catch (int ex) {
+		cout << "异常：" << ex << endl;
+	}
+	return 0;
+}
+
+结果：	A构造
+	B构造
+	B析构
+	A析构
+
+
+	3. 在构造函数中抛出异常：在对象的初始化或者资源分配过程中遇到的各种错误，但是要注意，如果构造函数抛出异常，那么该/*对象的析构函数就不会被执行*/，有关/*动态资源*/释放的操作必须在构造函数抛出异常之前手动完成。
+
+	基类子对象，成员子对象以及通过auto_ptr<T>管理的动态对象，无需考虑内存泄漏问题，因为构造函数的自动回滚机制，可以保证这些对象的析构函数在异常抛出的同时被正确执行。
+
+
+#include <memory>
+using namespace std;
+class A {
+public: A (void) { cout << "A构造" << endl; }
+	~A (void) { cout << "A析构" << endl; }
+};
+class B {
+public: B (void) { cout << "B构造" << endl; }
+	~B (void) { cout << "B析构" << endl; }
+};
+class C {
+public: C (void) { cout << "C构造" << endl; }
+	~C (void) { cout << "C析构" << endl; }
+};
+class Object {
+public:
+	Object (void) : m_pa (new A),
+		m_pc (new C), m_buf (
+		malloc (1024)) {
+		cout << "Object构造" << endl;
+		if (! m_buf) {
+			delete m_pa;
+			throw errno;
+		}
+	}
+	~Object (void) {
+		cout << "Object析构" << endl;
+		free (m_buf);
+		delete m_pa;
+	}
+	void set (char const* text) {
+		strcpy ((char*)m_buf, text);
+	}
+	char const* get (void) const {
+		return (char const*)m_buf;
+	}
+private:
+	A* m_pa;
+	B m_b;
+	auto_ptr<C> m_pc;
+	void* m_buf;
+};
+int main (void) {
+	try {
+		Object obj;
+		obj.set ("Hello, World !");
+		cout << obj.get () << endl;
+	}
+	catch (int ex) {
+		cout << strerror (ex) << endl;
+		return -1;
+	}
+	return 0;
+}
+
+结果：	A构造
+	B构造
+	C构造
+	Object构造
+	Hello, World !
+	Object析构
+	A析构
+	C析构
+	B析构
+
+
+
+
+cons.cpp
+
+#include <errno.h>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <memory>
+using namespace std;
+
+class A {
+public: A (void) { cout << "A构造" << endl; }
+	~A (void) { cout << "A析构" << endl; }
+};
+
+class B {
+public: B (void) { cout << "B构造" << endl; }
+	~B (void) { cout << "B析构" << endl; }
+};
+
+class C {
+public: C (void) { cout << "C构造" << endl; }
+	~C (void) { cout << "C析构" << endl; }
+};
+
+class Object {
+public:
+	Object (void) : m_pa (new A),
+		m_pc (new C), m_buf (
+		malloc (0xFFFFFFFF)) {
+		cout << "Object构造" << endl;   
+		if (! m_buf) {			//构造函数抛出异常  在构造函数里写清内存
+			delete m_pa;
+			throw errno;
+		}
+	}
+	~Object (void) {
+		cout << "Object析构" << endl;
+		free (m_buf);
+		delete m_pa;
+	}
+	void set (char const* text) {
+		strcpy ((char*)m_buf, text);
+	}
+	char const* get (void) const {
+		return (char const*)m_buf;
+	}
+private:
+	A* m_pa;
+	B m_b;
+	auto_ptr<C> m_pc;
+	void* m_buf;
+};
+
+int main (void) {
+	try {
+		Object obj;
+		obj.set ("Hello, World !");
+		cout << obj.get () << endl;
+	}
+	catch (int ex) {
+		cout << strerror (ex) << endl;
+		return -1;
+	}
+	return 0;
+}
+
+结果：	A构造
+	B构造
+	C构造
+	Object构造		//不会有object析构 但是没有问题 已经处理了
+	A析构
+	C析构
+	B析构
+	Cannot allocate memory
+
+
+
+auto_ptr<T>
+
+	4. 忠告：最好不要从析构函数中抛出异常。因为析构函数本身就是异常处理的一部分，如果在析构函数抛出异常，就会打断函数栈帧辗转开解的过程，进而引发更多的异常，最终导致进程崩溃。(没处理完异常又到来新的异常，没处理完刚才的异常又去处理新的异常，辗转反侧)
+
+	为了防止被析构函数调用的其他函数抛出的异常从析构函数中被继续抛出，还应该在析构函数返回以前，尽可能捕获所有可能捕获的异常。
+
+decons.cpp
+
+#include <iostream>
+using namespace std;
+
+void bar (void) {
+	throw 1.0;
+}
+
+class A {
+public:
+	void foo (void) {
+		throw 1;
+	}
+	~A (void) {
+//		throw 1.0;
+		try {
+			bar ();
+		}
+		catch (...) {}     //catch(...)   处理任何异常
+	}
+};
+int main (void) {
+	try {
+		A a;
+		a.foo ();
+	}
+	catch (int ex) {
+		cout << ex << endl;
+	}
+	catch (double ex) {
+		cout << ex << endl;
+	}
+	return 0;
+}
+  
+结果：1
+
+
+
+
+// 练习：通过异常向函数的调用提供更多故障信息
+// 故障原因、源文件、行号、函数
+#include <errno.h> // extern int errno;
+#include <cstdio>  // fopen()
+#include <ctime>   // time()
+#include <cstring> // strerror()
+#include <iostream>
+using namespace std;
+
+class FileError {
+public:
+	FileError (time_t time,
+		string const& file, int line,
+		string const& func,
+		string const& desc) :
+		m_time (time), m_file (file),
+		m_line (line), m_func (func),
+		m_desc (desc) {}
+	friend ostream& operator<< (ostream& os,
+		FileError const& err) {
+		tm* local = localtime (&err.m_time);
+		return os << '['
+			<< local->tm_year + 1900
+			<< "年" << local->tm_mon + 1
+			<< "月" << local->tm_mday
+			<< "日 " << local->tm_hour << ':'
+			<< local->tm_min << ':'
+			<< local->tm_sec << ' '
+			<< err.m_file << ' '
+			<< err.m_line << ' '
+			<< err.m_func << ']' << endl
+			<< err.m_desc;
+	}
+private:
+	time_t m_time; // 出错时间
+	string m_file; // 出错文件
+	int    m_line; // 出错行号
+	string m_func; // 出错函数
+	string m_desc; // 错误描述
+};
+
+class A {
+public:
+	A (void) { cout << "A构造" << endl; }
+	~A (void) { cout << "A析构" << endl; }
+};
+void foo (void) {
+	A a;
+	cout << "调用fopen前" << endl;
+	FILE* fp = fopen ("none", "r");
+	if (! fp) {
+//		perror ("fopen");
+//		throw 100;
+		throw FileError (time (NULL),
+			__FILE__, __LINE__, __func__,
+			strerror (errno));
+	}
+	cout << "fopen成功" << endl;
+	fclose (fp);
+}
+void bar (void) {
+	A a;
+	cout << "调用foo前" << endl;
+	foo ();
+	cout << "调用foo后" << endl;
+}
+void hum (void) {
+	A a;
+	cout << "调用bar前" << endl;
+	bar ();
+	cout << "调用bar后" << endl;
+}
+int main (void) {
+	try {
+		A a;
+		cout << "调用hum前" << endl;
+		hum ();
+		cout << "调用hum后" << endl;
+	}
+	catch (/*int ex*/FileError& ex) {
+		/*
+		cout << "失败！" << endl;
+		cout << "ex = " << ex << endl;
+		*/
+		cout << ex << endl;
+		return -1;
+	}
+	cout << "成功！" << endl;
+	return 0;
+}
+ 
+结果：	A构造
+	调用hum前
+	A构造
+	调用bar前
+	A构造
+	调用foo前
+	A构造
+	调用fopen前
+	A析构
+	A析构
+	A析构
+	A析构
+	[2016年5月24日 19:23:48 open.cpp 53 foo]
+	No such file or directory
+
+
+结果：touch none
+
+	A构造
+	调用hum前
+	A构造
+	调用bar前
+	A构造
+	调用foo前
+	A构造
+	调用fopen前
+	fopen成功
+	A析构
+	调用foo后
+	A析构
+	调用bar后
+	A析构
+	调用hum后
+	A析构
+	成功！
+
+
+
+

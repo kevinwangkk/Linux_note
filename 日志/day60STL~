@@ -1,0 +1,1460 @@
+关键字：
+
+
+八. 子类模板访问基类模板
+	在子类模板中直接访问那些依赖于模板参数的基类模板的成员，编译器在第一次编译时，通常会因为基类类型不明确而只在子类和全局作用域中搜索所引用的符号。通过显式注明基类的作用域限定，或者显式使用 this 指针，可以迫使编译器在第二次编译时根据基类声明检查所引用的符号，避免编译失败。 
+
+inherit.cpp
+
+#include <cstdlib>
+#include <iostream>
+using namespace std;
+template<typename T>
+class Base {
+public:
+	int m_var;
+
+	void fun (void) const {
+		cout << m_var << endl;
+	}
+	class Dummy {};
+	void exit (int status) const {
+		cout << "再见！" << endl;
+	}
+};
+template<typename T>
+class Derived : public Base<T> {
+public:
+	void bar (void) {
+//		Base<T>::m_var = 100;
+//		Base<T>::fun ();
+		this->m_var = 100;	
+		this->fun ();		//成员变量 成员函数要用this指针    成员中类不用
+		typename Base<T>::Dummy dummy; //而成员中的类要加 typename Base<T>:: 显式注明基类的作用域限定
+		Base<T>::exit (0);
+	}
+};
+int main (void) {
+	Derived<int> derived;
+	derived.bar ();
+	return 0;
+}
+
+
+//成员变量 成员函数要用    成员中类不用
+//看全局作用域和子类作用域 不看基类作用域
+
+
+九. 模板中的模板
+
+tit.cpp
+
+#include <iostream>
+using namespace std;
+template<typename A>
+class X {
+public:
+	/*
+	template<typename B>
+	class Y {
+	public:				//在类模板的内部定义一个类模板
+		B m_b;
+	};
+	*/
+	template<typename B> class Y; //在类模板中声明类模板
+	/*
+	template<typename C>
+	void foo (C const& c) {
+		cout << c << endl;	//在类模板的内部定义一个类模板
+	}
+	*/
+	template<typename C> void foo (C const&); //在类模板中声明类模板
+	A m_a;
+};
+template<typename A>		//在类模板的外部定义一个类模板，声明在类模板内部
+	template<typename B>
+class X<A>::Y {
+public:
+	B m_b;
+};
+template<typename A>		//在类模板的外部定义一个类模板，声明在类模板内部
+	template<typename C>
+void X<A>::foo (C const& c) {
+	cout << c << endl;
+}
+int main (void) {
+	X<int>::Y<double> y;
+	cout << (y.m_b = 3.14) << endl;
+	X<int> x;
+	x.foo (3.14);
+	return 0;
+}
+
+//类模板中的类模板  可以在类模板中写，也可以在类模板中声明之后在外面写
+//类模板中的函数模板 可以在类模板中写，也可以在类模板中声明之后在外面写
+
+
+
+十. 模板型的模板成员和模板参数
+
+
+tat.cpp
+
+#include <iostream>
+using namespace std;
+template<typename T>
+class Array {
+public:
+	void push (T const& data) {
+		cout << "向数组压入数据" << endl;
+	}
+	T pop (void) {
+		cout << "从数组弹出数据" << endl;
+	}
+};
+template<typename T>
+class List {
+public:
+	void push (T const& data) {
+		cout << "向链表压入数据" << endl;
+	}
+	T pop (void) {
+		cout << "从链表弹出数据" << endl;
+	}
+};
+template<typename T,
+	template<typename> class C> // 模板型的模板
+class Stack {                   // 参数
+public:
+	void push (T const& data) {
+		m_c.push (data);
+	}
+	T pop (void) {
+		return m_c.pop ();
+	}
+private:
+	C<T> m_c; // 模板型的成员变量
+};
+int main (void) {
+	Stack<int, Array> sia;
+	sia.push (100);
+	cout << sia.pop () << endl;
+	Stack<int, List> sil;
+	sil.push (100);
+	cout << sil.pop () << endl;
+	return 0;
+}
+
+
+
+十一. 零初始化		//括号里什么也不写 就是用零初始化   空括号
+
+init.cpp
+
+#include <iostream>
+using namespace std;
+template<typename T>
+void foo (void) {
+	T      var = T      (); // 零初始化
+//	int    var = int    (); // 0
+//	double var = double (); // 0.0
+//	char*  var = char*  (); // NULL
+//	string var = string (); // ""
+	cout << var << endl;
+}
+template<typename T>
+class A {
+public:
+	A (void) : m_var () {} // 零初始化
+	void foo (void) const {
+		cout << m_var << endl;
+	}
+private:
+	T m_var;
+};
+int main (void) {
+//	foo<int> ();
+//	foo<string> ();
+	A<int> ai;
+	ai.foo ();
+	A<string> as;
+	as.foo ();
+	return 0;
+}
+
+
+//零初始化
+
+
+
+十二. 类模板与虚函数
+
+	1. 类模板中可以包含虚函数，但是一定要注意，实例化该模板所用的类型实参一定不能违背有效覆盖的条件，否则将导致编译错误，或者丧失多态特性。
+
+	2. 如果一个类或者类模板的成员函数带有自己的类型参数，那么该函数就是一个类或类模板的模板型成员函数，这样的成员函数不能同时又是虚函数。（无法静态构建虚表）
+	其原因是模板函数的二次编译阻碍虚函数表的静态构建。
+
+
+virtual.cpp
+
+#include<iostream>
+using namespace std;
+
+template<typename T>
+class A{
+public:
+	virtual void foo (T arg) const{
+		cout<<"A::foo"<<endl;
+	}
+};
+
+template<typename T>
+class B:public A<T>{
+public:
+	void foo(T arg) const{
+		cout<<"B::foo"<<endl;
+	}
+};
+
+template<typename T,typename U>
+class C:public A<U>{
+public:
+	void foo(T arg) const{
+		cout<<"C::foo"<<endl;
+	}
+};
+
+int main()
+{
+	B<int> b;
+	A<int>& a1=b;
+	a1.foo(100);
+
+	C<int,int> c1;
+	A<int>& a2=c1;
+	a2.foo(200);
+
+	C<double,int> c2;//无法实现多态 参数类型不一致
+	A<int>& a3=c2;
+	a3.foo(300);
+
+	return 0;
+}
+
+
+virtual.cpp
+
+#include <iostream>
+using namespace std;
+template<typename T>
+class A {
+public:
+	// 类模板中的虚函数
+	virtual void foo (T arg) const {
+		cout << "A::foo" << endl;
+	}
+	virtual T bar (void) const {
+		cout << "A::bar" << endl;
+		return T ();
+	}
+};
+template<typename T>
+class B : public A<T> {
+public:
+	void foo (T arg) const {
+		cout << "B::foo" << endl;
+	}
+};
+template<typename T, typename U>
+class C : public A<U> {
+public:
+	void foo (T arg) const {
+		cout << "C::foo" << endl;
+	}
+};
+template<typename T, typename U>
+class D : public A<U> {
+public:
+	T bar (void) const {
+		cout << "D::bar" << endl;
+		return T ();
+	}
+};
+/* 模板函数不能同时又是虚函数
+class E {
+public:
+	// 普通类中的虚模板
+	template<typename T>
+	virtual T hum (T arg) const {
+		cout << "E::hum" << endl;
+		return arg;
+	}
+};
+*/
+int main (void) {
+	// 有效覆盖，多态
+	B<int> b;
+	A<int>& a1 = b;
+	a1.foo (100);
+	// 有效覆盖，多态
+	C<int, int> c1;
+	A<int>& a2 = c1;
+	a2.foo (200);
+	// 无效覆盖，隐藏
+	C<double, int> c2;
+	A<int>& a3 = c2;
+	a3.foo (300);
+	// 有效覆盖，多态
+	D<int, int> d1;
+	A<int>& a4 = d1;
+	a4.bar ();
+	/* 无效覆盖，不正当关系，编译失败
+	D<double, int> d2;
+	A<int>& a5 = d2;
+	d5.bar ();
+	*/
+	return 0;	
+}
+
+结果：	B::foo
+	C::foo
+	A::foo
+	D::bar
+
+
+
+十三. 模板的编译模型
+
+1. 单一模型：将模板的声明与实现放在同一个编译单元中。
+
+template<typename T>
+class A{
+	void foo(T arg){...}
+
+};
+
+
+2. 分离模型：将模板的声明与实现分别放在一个.h和.cpp文件中。
+
+xxx.h
+//声明
+template<typename T>
+class A{
+	void foo(T arg);
+};
+
+xxx.cpp
+//实现
+template<typename T>
+void A<T>::foo(T arg){...}
+
+是否可以行？ 不可行！  // xxx.cpp没有实例化 不会生成函数地址
+
+
+
+
+////////////////////////////////////////max.h
+
+#ifndef _MAX_H
+#define _MAX_H
+template<typename T>
+T max (T x, T y);
+template<typename T>
+class Comparator {
+public:
+	Comparator (T x, T y);
+	T max (void) const;
+private:
+	T m_x, m_y;
+};
+#endif // _MAX_H
+
+//////////////////////////////////////max.cpp
+
+#include "max.h"
+template<typename T>
+T max (T x, T y) {
+	return x < y ? y : x;
+}
+template<typename T>
+Comparator<T>::Comparator (T x, T y) :
+	m_x (x), m_y (y) {}
+template<typename T>
+T Comparator<T>::max (void) const {
+	return m_x < m_y ? m_y : m_x;
+}
+
+/////////////////////////////////////main.cpp
+
+#include <iostream>
+using namespace std;
+#include "max.h"
+int main (void) {
+	int a = 123, b = 456;
+	double c = 1.3, d = 4.6;
+	string e = "hello", f = "world";
+	cout << ::max (a, b) << endl;
+	cout << ::max (c, d) << endl;
+	cout << ::max (e, f) << endl;
+	cout << Comparator<int> (a, b).max ()
+		<< endl;
+	cout << Comparator<double> (c, d).max ()
+		<< endl;
+	cout << Comparator<string> (e, f).max ()
+		<< endl;
+	return 0;
+}
+
+
+
+3. 包含模型
+	在模板的声明文件末尾包含该模板的实现文件，强制模板的声明，实现和实例化都同处于一个编译单元，保证对模板的二次编译能够正确执行，满足链接器的要求。但是，包含模型会延长编译时间，而且模板的实现代码必须公开。
+
+
+/////////////////////////////////////////////max.h
+
+#ifndef _MAX_H
+#define _MAX_H
+template<typename T>
+T max (T x, T y);
+template<typename T>
+class Comparator {
+public:
+	Comparator (T x, T y);
+	T max (void) const;
+private:
+	T m_x, m_y;
+};
+#include "max.cpp"	//注意这里
+#endif // _MAX_H
+
+
+////////////////////////////////////////////max.cpp
+
+template<typename T>
+T max (T x, T y) {
+	return x < y ? y : x;
+}
+template<typename T>
+Comparator<T>::Comparator (T x, T y) :
+	m_x (x), m_y (y) {}
+template<typename T>
+T Comparator<T>::max (void) const {
+	return m_x < m_y ? m_y : m_x;
+}
+
+
+/////////////////////////////////////////////main.cpp
+
+#include <iostream>
+using namespace std;
+#include "max.h"
+int main (void) {
+	int a = 123, b = 456;
+	double c = 1.3, d = 4.6;
+	string e = "hello", f = "world";
+	cout << ::max (a, b) << endl;
+	cout << ::max (c, d) << endl;
+	cout << ::max (e, f) << endl;
+	cout << Comparator<int> (a, b).max ()
+		<< endl;
+	cout << Comparator<double> (c, d).max ()
+		<< endl;
+	cout << Comparator<string> (e, f).max ()
+		<< endl;
+	return 0;
+}
+
+4. 实例模型
+	在模板实现文件中使用实例化指示符，强制编译器在编译该文件时，即根据特定的模板实参对模板进行实例化，满足链接器的要求，编译速度快，而且模板的实现代码不必公开。但是，实例模型的实例化类型总是有限的，对于用户自定义的各种类型无法提供完全的支持。
+
+
+////////////////////////////////////////////max.h
+
+#ifndef _MAX_H
+#define _MAX_H
+template<typename T>
+T max (T x, T y);
+template<typename T>
+class Comparator {
+public:
+	Comparator (T x, T y);
+	T max (void) const;
+private:
+	T m_x, m_y;
+};
+#endif // _MAX_H
+
+
+//////////////////////////////////////////max.cpp
+
+#include <string>
+using namespace std;
+#include "max.h"
+template<typename T>
+T max (T x, T y) {
+	return x < y ? y : x;
+}
+template<typename T>
+Comparator<T>::Comparator (T x, T y) :
+	m_x (x), m_y (y) {}
+template<typename T>
+T Comparator<T>::max (void) const {
+	return m_x < m_y ? m_y : m_x;
+}
+
+// 模板的显式实例化
+template int max (int, int);
+template double max (double, double);
+template string max (string, string);
+template class Comparator<int>;
+template class Comparator<double>;
+template class Comparator<string>;
+
+
+//////////////////////////////////////////////main.cpp
+
+#include <iostream>
+using namespace std;
+#include "max.h"
+int main (void) {
+	int a = 123, b = 456;
+	double c = 1.3, d = 4.6;
+	string e = "hello", f = "world";
+	cout << ::max (a, b) << endl;
+	cout << ::max (c, d) << endl;
+	cout << ::max (e, f) << endl;
+	cout << Comparator<int> (a, b).max ()
+		<< endl;
+	cout << Comparator<double> (c, d).max ()
+		<< endl;
+	cout << Comparator<string> (e, f).max ()
+		<< endl;
+	return 0;
+}
+
+
+5. 导出模型
+大多数编译器不支持！
+GNU/Microsoft/IBM/HP.Oracle
+C++2011彻底删除了该特性，export 关键字被移作它用
+
+max.h
+
+#ifndef _MAX_H
+#define _MAX_H
+export template<typename T>		//注意这里加了export关键字  但是现在export关键字被移作它用
+T max (T x, T y);
+export template<typename T>		//注意这里加了export关键字  但是现在export关键字被移作它用
+class Comparator {
+public:
+	Comparator (T x, T y);
+	T max (void) const;
+private:
+	T m_x, m_y;
+};
+#endif // _MAX_H
+
+
+max.cpp
+
+#include "max.h"
+template<typename T>
+T max (T x, T y) {
+	return x < y ? y : x;
+}
+template<typename T>
+Comparator<T>::Comparator (T x, T y) :
+	m_x (x), m_y (y) {}
+template<typename T>
+T Comparator<T>::max (void) const {
+	return m_x < m_y ? m_y : m_x;
+}
+
+main.cpp
+
+#include <iostream>
+using namespace std;
+#include "max.h"
+int main (void) {
+	int a = 123, b = 456;
+	double c = 1.3, d = 4.6;
+	string e = "hello", f = "world";
+	cout << ::max (a, b) << endl;
+	cout << ::max (c, d) << endl;
+	cout << ::max (e, f) << endl;
+	cout << Comparator<int> (a, b).max ()
+		<< endl;
+	cout << Comparator<double> (c, d).max ()
+		<< endl;
+	cout << Comparator<string> (e, f).max ()
+		<< endl;
+	return 0;
+}
+
+
+十四. 预编译头文件   	//加快编译速度
+
+common.h
+#include<unistd.h>
+#include<stdio.h>
+#include<iostream>
+...
+
+g++ -c common.h   生成 common.h.gch (预编译头文件)
+
+a.cpp
+#include"common.h"
+....
+....
+
+
+微软：
+stdafx.cpp -> <项目名>.pch
+#include"stdafx.h"
+
+
+十五. 多态
+1. 动态多态：基于虚函数和动态绑定的多态。
+2. 静态多态：基于参数类型和模板的多态。
+
+
+dpoly.cpp
+
+#include <iostream>
+using namespace std;
+class Shape {
+public:
+	virtual void draw (void) const = 0;
+};
+class Rect : public Shape {
+public:
+	void draw (void) const {
+		cout << "绘制矩形" << endl;
+	}
+};
+class Circle : public Shape {
+public:
+	void draw (void) const {
+		cout << "绘制圆形" << endl;
+	}
+};
+// 多态函数
+void drawAny (Shape const& shape) {
+	shape.draw ();
+}
+int main (void) {
+	drawAny (Rect ());
+	drawAny (Circle ());
+	return 0;
+}
+
+
+
+spoly.cpp
+
+#include <iostream>
+using namespace std;
+class Rect {
+public:
+	void draw (void) const {
+		cout << "绘制矩形" << endl;
+	}
+};
+class Circle {
+public:
+	void draw (void) const {
+		cout << "绘制圆形" << endl;
+	}
+};
+// 多态函数
+template<typename Shape>		//静态多态：基于参数类型和模板的多态。
+void drawAny (Shape const& shape) {
+	shape.draw ();
+}
+int main (void) {
+	drawAny (Rect ());
+	drawAny (Circle ());
+	return 0;
+}
+
+
+
+十六. 容器，迭代器和泛型算法
+
+1. 容器：双向线性链表
+2. 迭代器：正向顺序迭代器
+3. 泛型算法：线性查找算法
+
+
+//双向线性链表容器
+//正向顺序迭代器
+//线性查找算法
+list.cpp
+
+#include<iostream>
+#include<cstring>
+#include<stdexcept>
+using namespace std;
+//双向线性链表容器
+template<typename T>
+class List{
+public:
+	//构造 析构 拷贝构造 拷贝赋值
+	List(void):m_head(NULL),m_tail(NULL){}
+
+	~Lise(void){
+		clear();	
+	}
+
+	List(List const& that):m_head(NULL),m_tail(NULL){
+		for(Node* node=that.m_head;node;node=node->m_next)
+			push_back(node->m_data);
+	}
+
+	List& operator=(List const& that){
+		if(&that!=this){   //避免自赋值
+			List list=that;
+			swap(m_head,list.m_head);
+			swap(m_tail,list.m_tail);
+		}
+		return *this;
+	}
+
+	//获取首元素
+	T& front(void){
+		if(empty())
+			throw underflow_error("链表下溢");  //标准定义了
+		return m_head->m_data;
+	}
+	T const& front(void) const{
+		return const_cast<List*>(this)->front();
+	}
+	//向首部压入
+	void push_front(T const& data){
+		m_head=new Node(data, NULL, m_head);
+		if(m_head->m_next)	//注意指针是否为空  唯一一个元素 尾指针为空
+			m_head->m_next->m_prev=m_head;
+		else
+			m_tail=m_head;
+	}
+	//从首部弹出
+	void pop_front(void){
+		if(empty())
+			throw underflow_error("链表下溢");
+		Node* next=m_head->m_next;	
+		delete m_head;
+		m_head=next;
+		if(m_head)
+			m_head->m_prev=NULL;
+		else
+			m_tail=NULL;		//弹出的是最后一个元素
+	
+	}
+	//获取尾元素
+	T& back(void){
+		if(empty())
+			throw underflow_error("链表下溢");
+		return m_tail->m_data;
+
+	}
+	T const& back(void) const{
+		return const_cast<List*>(this)->back();
+	
+	}
+	//向尾部压入
+	void push_back(T const& data){
+		m_tail=new Node(data, m_tail, NULL);
+		if(m_tail->m_prev)
+			m_tail->m_prev->m_next=m_tail;
+		else
+			m_head=m_tail;
+	
+	}
+	//从尾部弹出
+	void pop_back(void){
+		if(empty())
+			throw underflow_error("链表下溢");
+		
+		Node* prev=m_tail->m_prev;
+		delete m_tail;
+		m_tail=prev;
+		if(m_tail)
+			m_tail->m_next=NULL;
+		else
+			m_head=NULL;
+
+	}
+	//删除所有匹配元素
+	void remove(T const& data){
+		for(Node* node=m_head,*next;node;node=node->next){
+			next=node->m_next;
+			if(node->m_data==data){
+				if(node->m_prev)
+					node->m_prev->m_next=node->m_next;
+				else
+					m_head=node->m_next;
+				if(node->m_next)				
+					node->m_next->prev=node->m_prev;
+				else
+					m_tail=node->m_prev;
+				delete node;					
+							
+			}
+		}
+
+	}
+	//清空
+	void clear(void){
+		while(!empty())
+			pop_back();
+
+	}
+	//判空
+	bool empty(void) const{
+		return !m_head && !m_tail;
+
+
+	}
+	//大小
+	size_t size(void) const{
+		size_t nodes=0;
+		for(Node* node = m_head;node;node=node->next)
+			++nodes;
+		return nodes;
+
+	}
+	//插入输出流
+	friend ostream& operator<<(ostream& os, List const& list ){
+		for(Node* node = list.m_head;node;node=node->m_next)
+			os<<*node;
+		return os;
+	}
+
+private:
+	//链表节点
+	class Node{
+	public:
+		Node(T const& data,Node* prev=NULL,Node* next=NULL):m_data(data),m_prev(prev),m_next(next){}
+		friend ostream& operator<<(ostream& os,Node const& node){  //插入运算符重载
+			return os<<'('<<node->m_data<<")";
+		}
+
+		T m_data;//数据
+		Node* m_prev;//前指针
+		Node* m_next;//后指针
+	};
+	Node* m_head;//头指针
+	Node* m_tail;//尾指针
+
+public:
+	//正向顺序迭代器
+	class Iterator{
+	public:
+		Iterator(Node* head=NULL,Node* tail=NULL,Node* node=NULL):m_head(head),m_tail(tail),m_node(node){}
+
+		bool operator==(Iterator const& it){}
+		
+
+		
+	private:
+		Node* m_head;
+		Node* m_tail;
+		Node* m_node;
+		friend class List;
+	};
+
+};
+ 
+//测试用例
+void test1()
+{
+	List<int> l1;
+	l1.push_front(10);
+	l1.push_front(20);
+	l1.push_front(30);
+	cout<<l1<<endl;
+
+}
+int main()
+{
+	test1();
+	return 0;
+	
+}
+
+
+
+
+list.cpp
+
+// 1.双向线性链表容器
+// 2.正向顺序迭代器
+// 3.线性查找算法
+#include <cstring>
+#include <iostream>
+#include <stdexcept>
+using namespace std;
+// 双向线性链表容器
+template<typename T>
+class List {
+public:
+	// 构造、析构、拷贝构造和拷贝赋值
+	List (void) : m_head (NULL),
+		m_tail (NULL) {}
+	~List (void) {
+		clear ();
+	}
+	List (List const& that) : m_head (NULL),
+		m_tail (NULL) {
+		for (Node* node = that.m_head; node;
+			node = node->m_next)
+			push_back (node->m_data);
+	}
+	List& operator= (List const& that) {
+		if (&that != this) {
+			List list = that;
+			swap (m_head, list.m_head);
+			swap (m_tail, list.m_tail);
+		}
+		return *this;
+	}
+	// 获取首元素
+	T& front (void) {
+		if (empty ())
+			throw underflow_error (
+				"链表下溢！");
+		return m_head->m_data;
+	}
+	T const& front (void) const {
+		return const_cast<List*> (this)->
+			front ();
+	}
+	// 向首部压入
+	void push_front (T const& data) {
+		m_head = new Node (data, NULL,
+			m_head);
+		if (m_head->m_next)
+			m_head->m_next->m_prev = m_head;
+		else
+			m_tail = m_head;
+	}
+	// 从首部弹出
+	void pop_front (void) {
+		if (empty ())
+			throw underflow_error (
+				"链表下溢！");
+		Node* next = m_head->m_next;
+		delete m_head;
+		m_head = next;
+		if (m_head)
+			m_head->m_prev = NULL;
+		else
+			m_tail = NULL;
+	}
+	// 获取尾元素
+	T& back (void) {
+		if (empty ())
+			throw underflow_error (
+				"链表下溢！");
+		return m_tail->m_data;
+	}
+	T const& back (void) const {
+		return const_cast<List*> (this)->
+			back ();
+	}
+	// 向尾部压入
+	void push_back (T const& data) {
+		m_tail = new Node (data, m_tail);
+		if (m_tail->m_prev)
+			m_tail->m_prev->m_next = m_tail;
+		else
+			m_head = m_tail;
+	}
+	// 从尾部弹出
+	void pop_back (void) {
+		if (empty ())
+			throw underflow_error (
+				"链表下溢！");
+		Node* prev = m_tail->m_prev;
+		delete m_tail;
+		m_tail = prev;
+		if (m_tail)
+			m_tail->m_next = NULL;
+		else
+			m_head = NULL;
+	}
+	// 删除所有匹配元素
+	void remove (T const& data) {
+		for (Node* node = m_head, *next;
+			node; node = next) {
+			next = node->m_next;
+			if (equal (node->m_data, data)) {
+				if (node->m_prev)
+					node->m_prev->m_next =
+						node->m_next;
+				else
+					m_head = node->m_next;
+				if (node->m_next)
+					node->m_next->m_prev =
+						node->m_prev;
+				else
+					m_tail = node->m_prev;
+				delete node;
+			}
+		}
+	}
+	// 清空
+	void clear (void) {
+		while (! empty ())
+			pop_back ();
+	}
+	// 判空
+	bool empty (void) const {
+		return ! m_head && ! m_tail;
+	}
+	// 大小
+	size_t size (void) const {
+		size_t nodes = 0;
+		for (Node* node = m_head; node;
+			node = node->m_next)
+			++nodes;
+		return nodes;
+	}
+	// 插入输出流
+	friend ostream& operator<< (ostream& os,
+		List const& list) {
+		for (Node* node = list.m_head; node;
+			node = node->m_next)
+			os << *node;
+		return os;
+	}
+private:
+	// 节点
+	class Node {
+	public:
+		Node (T const& data,
+			Node* prev = NULL,
+			Node* next = NULL) :
+			m_data (data), m_prev (prev),
+			m_next (next) {}
+		friend ostream& operator<< (
+			ostream& os, Node const& node) {
+			return os << '(' << node.m_data
+				<< ')';
+		}
+		T     m_data; // 数据
+		Node* m_prev; // 前指针
+		Node* m_next; // 后指针
+	};
+	// 判断元素相等的通用版本
+	bool equal (T const& a,
+		T const& b) const {
+		return a == b;
+	}
+	Node* m_head; // 头指针
+	Node* m_tail; // 尾指针
+public:
+	// 正向顺序迭代器
+	class Iterator {
+	public:
+		Iterator (Node* head = NULL,
+			Node* tail = NULL,
+			Node* node = NULL) :
+			m_head (head), m_tail (tail),
+			m_node (node) {}
+		bool operator== (
+			Iterator const& it) const {
+			return m_node == it.m_node;
+		}
+		bool operator!= (
+			Iterator const& it) const {
+			return ! (*this == it);
+		}
+		Iterator& operator++ (void) {
+			if (m_node)
+				m_node = m_node->m_next;
+			else
+				m_node = m_head;
+			return *this;
+		}
+		Iterator const operator++ (int) {
+			Iterator old = *this;
+			++*this;
+			return old;
+		}
+		Iterator& operator-- (void) {
+			if (m_node)
+				m_node = m_node->m_prev;
+			else
+				m_node = m_tail;
+			return *this;
+		}
+		Iterator const operator-- (int) {
+			Iterator old = *this;
+			--*this;
+			return old;
+		}
+		T& operator* (void) const {
+			return m_node->m_data;
+		}
+		T* operator-> (void) const {
+			return &**this;
+		}
+	private:
+		Node* m_head;
+		Node* m_tail;
+		Node* m_node;
+		friend class List;
+	};
+	// 获取起始正向迭代器
+	// 指向容器中的首元素
+	Iterator begin (void) {
+		return Iterator (m_head, m_tail,
+			m_head);
+	}
+	// 获取终止正向迭代器
+	// 指向容器中的尾元素的下一个位置
+	Iterator end (void) {
+		return Iterator (m_head, m_tail);
+	}
+	// 插入
+	// 在迭代器loc之前插入新元素data，
+	// 同时返回指向新元素的迭代器
+	Iterator insert (Iterator loc,
+		T const& data) {
+		if (loc == end ()) {
+			push_back (data);
+			return Iterator (m_head, m_tail,
+				m_tail);
+		}
+		else {
+			Node* node = new Node (data,
+				loc.m_node->m_prev,
+				loc.m_node);
+			if (node->m_prev)
+				node->m_prev->m_next = node;
+			else
+				m_head = node;
+			node->m_next->m_prev = node;
+			return Iterator (m_head, m_tail,
+				node);
+		}
+	}
+	// 删除
+	// 删除迭代器loc所指向的元素，
+	// 同时返回指向下一个元素的迭代器
+	Iterator erase (Iterator loc) {
+		if (loc == end ())
+			throw invalid_argument (
+				"无效参数！");
+		if (loc.m_node->m_prev)
+			loc.m_node->m_prev->m_next =
+				loc.m_node->m_next;
+		else
+			m_head = loc.m_node->m_next;
+		if (loc.m_node->m_next)
+			loc.m_node->m_next->m_prev =
+				loc.m_node->m_prev;
+		else
+			m_tail = loc.m_node->m_prev;
+		Node* next = loc.m_node->m_next;
+		delete loc.m_node;
+		return Iterator (m_head, m_tail,
+			next);
+	}
+};
+// 判断元素相等的特化版本
+template<>
+bool List<char const*>::equal (
+	char const* const& a,
+	char const* const& b) const {
+	return ! strcmp (a, b);
+}
+// 线性查找算法
+/*
+int find (int data[], int size, int key) {
+	for (int i = 0; i < size; ++i)
+		if (data[i] == key)
+			return i;
+	return -1;
+}
+*//*
+template<typename T>
+int find (T data[], int size, T const& key) {
+	for (int i = 0; i < size; ++i)
+		if (data[i] == key)
+			return i;
+	return -1;
+}
+*//*
+// 13 10 17 21 19 15
+// ^     --          ^
+// begin             end
+int* find (int* begin, int* end, int key) {
+	int* it;
+	for (it = begin; it != end; ++it)
+		if (*it == key)
+			break;
+	return it;
+}
+*/
+template<typename IT, typename KEY>
+IT find (IT begin, IT end, KEY const& key) {
+	IT it;
+	for (it = begin; it != end; ++it)
+		if (*it == key)
+			break;
+	return it;
+}
+// 练习：快速排序算法
+template<typename IT>
+void sort (IT begin, IT end) {
+}
+template<typename IT, typename LESS>
+void sort (IT begin, IT end, LESS less) {
+}
+// 测试用例
+void test1 (void) {
+	List<int> l1;
+	l1.push_front (10);
+	l1.push_front (20);
+	l1.push_front (30);
+	cout << l1 << endl; // 30 20 10
+	l1.pop_front ();
+	cout << l1 << endl; // 20 10
+	l1.front () = 0;
+	cout << l1 << endl; // 0 10
+	List<int> const& cr = l1;
+	cout << cr.front () /*= 20*/ << endl;
+	l1.push_back (20);
+	l1.push_back (30);
+	l1.push_back (40);
+	cout << l1 << endl; // 0 10 20 30 40
+	l1.pop_back ();
+	cout << l1 << endl; // 0 10 20 30
+	l1.back () = 0;
+	cout << l1 << endl; // 0 10 20 0
+	List<int> const* cp = &l1;
+	cout << cp->back () /*= 30*/ << endl;
+	l1.push_front (30);
+	l1.push_front (0);
+	l1.push_front (0);
+	l1.push_back (40);
+	l1.push_back (0);
+	l1.push_back (0);
+	cout << l1 << endl;
+	// 0 0 30 0 10 20 0 40 0 0
+	l1.remove (0);
+	cout << l1 << endl; // 30 10 20 40
+	cout << l1.size () << ' ' << boolalpha
+		<< l1.empty () << endl; // 4 false
+	l1.clear ();
+	cout << l1.size () << ' ' << l1.empty ()
+		<< endl; // 0 true
+	l1.push_back (100);
+	l1.push_back (200);
+	l1.push_back (300);
+	l1.push_back (400);
+	l1.push_back (500);
+	List<int> l2 = l1; // 拷贝构造
+	cout << "l1: " << l1 << endl;
+	cout << "l2: " << l2 << endl;
+	--l1.front ();
+	l1.pop_back ();
+	++l2.front ();
+	l2.push_back (600);
+	cout << "l1: " << l1 << endl;
+	cout << "l2: " << l2 << endl;
+	l2 = l1; // 拷贝赋值
+	cout << "l1: " << l1 << endl;
+	cout << "l2: " << l2 << endl;
+	++l1.front ();
+	l1.push_back (500);
+	--l2.front ();
+	l2.pop_back ();
+	cout << "l1: " << l1 << endl;
+	cout << "l2: " << l2 << endl;
+}
+void test2 (void) {
+	char sa[][256] = {"北京", "天津", "北京",
+		"重庆", "上海", "北京"};
+//	char const* sa[] = {"北京","天津","北京",
+//		"重庆", "上海", "北京"};
+//	List<string> ls;
+	List<char const*> ls;
+	for (size_t i = 0; i < sizeof (sa) /
+		sizeof (sa[0]); ++i)
+		ls.push_back (sa[i]);
+	cout << ls << endl;
+	ls.remove ("北京");
+	cout << ls << endl;
+}
+void test3 (void) {
+	List<int> list;
+	for (int i = 1; i < 11; ++i)
+		list.push_back (i);
+	cout << list << endl;
+	for (List<int>::Iterator it =
+		list.begin ();it != list.end ();++it)
+		*it *= *it;
+	cout << list << endl;
+}
+void test4 (void) {
+	List<int> list;
+	list.insert (list.end (), 10);
+	list.insert (list.end (), 50);
+	list.insert (list.end (), 90);
+	cout << list << endl; // 10 50 90
+	List<int>::Iterator loc = list.begin ();
+	list.insert (
+		list.insert (
+			list.insert (++loc,40),30),20);
+	cout << list << endl;
+	loc = list.end ();
+	list.insert (
+		list.insert (
+			list.insert (--loc,80),70),60);
+	cout << list << endl;
+	loc = list.begin ();
+	list.erase (
+		list.erase (
+			list.erase (++++++loc)));
+	cout << list << endl;
+}
+void test5 (void) {
+	int ai[] = {13, 17, 19, 15, 21, 33};
+	int* pi = find (ai, ai + 6, 19/*20*/);
+	if (pi == ai + 6)
+		cout << "没找到！" << endl;
+	else
+		cout << "找到了：" << *pi << endl;
+	List<string> ls;
+	ls.push_back ("微软");
+	ls.push_back ("甲骨文");
+	ls.push_back ("达内");
+	ls.push_back ("腾讯");
+	ls.push_back ("阿里");
+	ls.push_back ("IBM");
+	List<string>::Iterator it = find (
+		ls.begin (), ls.end (),
+		"达内"/*"苹果"*/);
+	if (it == ls.end ())
+		cout << "没找到！" << endl;
+	else
+		cout << "找到了：" << *it << endl;
+}
+int main (void) {
+//	test1 ();
+//	test2 ();
+//	test3 ();
+//	test4 ();
+	test5 ();
+	return 0;
+}
+
+结果：
+test1
+	(30)(20)(10)
+	(20)(10)
+	(0)(10)
+	0
+	(0)(10)(20)(30)(40)
+	(0)(10)(20)(30)
+	(0)(10)(20)(0)
+	0
+	(0)(0)(30)(0)(10)(20)(0)(40)(0)(0)
+	(30)(10)(20)(40)
+	4 false
+	0 true
+	l1: (100)(200)(300)(400)(500)
+	l2: (100)(200)(300)(400)(500)
+	l1: (99)(200)(300)(400)
+	l2: (101)(200)(300)(400)(500)(600)
+	l1: (99)(200)(300)(400)
+	l2: (99)(200)(300)(400)
+	l1: (100)(200)(300)(400)(500)
+	l2: (98)(200)(300)
+
+test2
+	(北京)(天津)(北京)(重庆)(上海)(北京)
+	(天津)(重庆)(上海
+
+test3
+	(1)(2)(3)(4)(5)(6)(7)(8)(9)(10)
+	(1)(4)(9)(16)(25)(36)(49)(64)(81)(100)
+
+test4
+	(10)(50)(90)
+	(10)(20)(30)(40)(50)(90)
+	(10)(20)(30)(40)(50)(60)(70)(80)(90)
+	(10)(20)(30)(70)(80)(90)
+
+test5
+	找到了：19
+	找到了：达内
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

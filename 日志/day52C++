@@ -1,0 +1,1084 @@
+关键字：静态成员变量 静态成员函数  成员指针  成员函数指针  操作符重载
+
+
+局部变量 	- 栈区
+静态局部变量 	- 静态区（数据区+BSS区）
+全局变量 	- 静态区
+静态全局变量	- 静态区
+动态变量	- 堆区
+成员变量	- 对象所在的区
+
+
+一. 静态成员
+1. 静态成员变量
+	静态成员变量是类的一部分，而不是对象一部分，不存在该类任何对象内部，却可为该类的任何对象所共享，和全局变量一样存放在静态区中，既可以通过对象访问，也可以通过类直接访问。
+
+2. 语法：声明时需要增加 static 关键字，定义和初始化必须在类的外部单独进行。 /*声明在类内部进行。*/
+
+
+#include<iostream>
+using namespace std;
+
+int g_var;
+
+class A{
+public:
+	int m_var;
+	A(int var=0):m_var(var){}
+	static int s_var;//静态成员变量 声明
+};
+
+int A::s_var;//定义静态成员变量 定义
+
+int main(void)
+{
+	cout<<&A::s_var<<endl;	//0x804a0d4
+	cout<<&g_var<<endl;	//0x804a0d8
+	A a1;
+	cout<<sizeof(a1)<<endl; //4  静态成员变量 声明   仅仅是声明
+	cout<<&a1<<endl;	//0xbfecfd88
+	cout<<&a1.m_var<<endl;	//0xbfecfd88
+
+	cout<<&a1.s_var<<endl; 	//0x804a0d4
+
+	A a2;
+	cout<<sizeof(a2)<<endl; //4
+	cout<<&a2<<endl;	//0xbfecfd8c
+	cout<<&a2.m_var<<endl;	//0xbfecfd8c
+
+	cout<<&a2.s_var<<endl; 	//0x804a0d4 静态成员变量为该类的对象所共享 a1 a2 都能用
+	return 0;
+}
+
+
+3. 应用：既满足类型的封装和保护，同时又为该类的对象所共享。既像成员变量受类型和访问控制属性的限制，又像全局变量不拘泥于某一个具体的对象。
+
+/*可以用静态成员变量代替全局变量 
+对全局变量无法封装 但对静态成员变量可以封装 毕竟静态成员变量是类的一部分*/
+
+/*高内聚 低耦合*/
+
+class Account{
+public：
+	string m_name;
+	int m_id;
+	string m_passwd;
+	double m_balance;
+	...
+	static void setRate(float rate){
+		m_rate=rate;
+	}
+private:
+	static float m_rate;
+};
+
+
+2. 静态成员函数
+1. 被声明为静态成员函数的成员函数，没有this指针，因此不需要通过对象来调用，当然也就无法访问任何与对象有关的资源。
+
+2. 静态成员函数只能访问静态成员，但是非静态成员函数既可以访问非静态成员也可以访问静态成员。
+
+#include<iostream>
+using namespace std;
+
+int g_var;
+class A{
+public:
+	int m_var;
+	A(int var=0):m_var(var){}
+	void foo(void){
+		++s_var;	//普通成员函数可以访问静态成员变量
+	}
+	//静态成员函数
+	static void set(int arg){
+		s_var=arg;
+	//	m_var=arg; 错误的 没有this指针 无法访问 this->m_var=arg;
+	}
+
+	static int s_var;//静态成员变量 声明
+};
+
+int A::s_var;//定义静态成员变量
+
+int main(void)
+{
+	cout<<&A::s_var<<endl;	//0x804a0d4
+	cout<<&g_var<<endl;	//0x804a0d8
+	A a1;
+	cout<<sizeof(a1)<<endl; //4
+	cout<<&a1<<endl;	//0xbfecfd88
+	cout<<&a1.m_var<<endl;	//0xbfecfd88
+	cout<<&a1.s_var<<endl; 	//0x804a0d4
+
+	A a2;
+	cout<<sizeof(a2)<<endl; //4
+	cout<<&a2<<endl;	//0xbfecfd8c
+	cout<<&a2.m_var<<endl;	//0xbfecfd8c
+	cout<<&a2.s_var<<endl; 	//0x804a0d4
+
+	A::set(1234);
+	cout<<A::s_var<<endl;	//1234
+	return 0;
+}
+
+
+
+3. 静态成员的应用---单例模式
+	1. 构造函数私有化 --- 禁止在外部创建对象 （"把路都堵死"）
+	2. 在类的内部创建唯一对象实例 --- 内部可以访问私有构造函数（静态成员）
+	3. 提供公开接口 以方便在类的外部获取对象实例（公开接口必须是静态成员）
+
+singleton.cpp
+#include<iostream>
+using namespace std;
+
+class Singleton{
+private:
+	//私有构造
+	Singleton(void){}			//缺省构造函数，拷贝构造函数均创建为私有
+	Singleton(Singleton const& that){}
+	//唯一实例
+	static Singleton s_inst;	//声明静态成员变量
+public:
+	//公开接口
+	static Singleton& getInst(void){
+		return s_inst;
+	}
+};
+
+Singleton Singleton::s_inst; //定义静态成员变量
+
+int main(void)
+{
+//	Singleton singleton;			//均为私有不能这么定义变量
+//	Singleton* singleton=new Singleton;
+	Singleton &s1=Singleton::getInst();
+	Singleton &s2=Singleton::getInst();
+	Singleton &s3=Singleton::getInst();
+	cout<<&s1<<' '<<&s2<<' '<<&s3<<endl; //0x804a0d4 0x804a0d4 0x804a0d4
+	return 0;
+}
+
+
+
+
+二. 成员指针
+class Student{...};
+Student student;
+sting* pname=&student.m_name;//不是成员指针  这是指向对象的指针  成员指针是指向类的指针
+
+1. 指向成员变量的指针
+类型 类名::*成员变量指针;
+成员变量指针=&类名::成员变量;
+对象.*成员变量指针 	//.*:成员指针解引用运算符
+对象指针->*成员变量指针 	//->*:间接成员指针解引用运算符
+
+成员变量指针的本质，就是特定成员变量在类对象实例中的相对地址。成员变量指针解引用，就是根据类对象实例的起始地址，结合成员变量指针中的相对地址，计算出具体成员变量的绝对地址，并访问之。
+
+
+#include<iostream>
+using namespace std;
+
+class Student{
+public:
+	int m_age;
+	string m_name;
+public:
+	Student(int age,string const& name):
+		m_age(age),m_name(name){}
+	void who(void) const{
+		cout<< m_age <<' '<<m_name<<endl;
+	}
+};
+
+int main(void)
+{
+	string Student::*pname=		//类型 类名::*成员变量指针;
+		&Student::m_name;	//成员变量指针=&类名::成员变量;
+	Student s1(20,"zhangfei"),*s2=new Student(22,"guanyu"); //
+	cout<<s1.*pname<<' '		//对象.*成员变量指针
+		<<s2->*pname<<endl;    	//对象指针->*成员变量指针
+	delete s2;
+	return 0;
+}
+
+结果：zhangfei guanyu
+
+2. 指向成员函数的指针
+返回类型（类型::*成员函数指针）（形参表）[常属性];
+成员函数指针=&类名::成员函数名;
+（对象.*成员函数指针）（实参表）;
+（对象指针->*成员函数指针）（实参表）;
+
+虽然成员函数并不存储在对象中，不存在根据相对地址计算绝对地址的问题，但也要通过对象或对象指针对成员函数指针解引用，其目的只有一个，即提供this指针
+
+
+#include<iostream>
+using namespace std;
+
+class Student{
+public:
+	int m_age;
+	string m_name;
+public:
+	Student(int age,string const& name):
+		m_age(age),m_name(name){}
+	void who(void) const{
+		cout<< m_age <<' '<<m_name<<endl;
+	}
+};
+
+int main(void)
+{
+	void (Student::*pwho)(void) const=&Student::who;	//指向成员函数的指针
+	//返回类型（类型::*成员函数指针）（形参表）[常属性]   成员函数指针=&类名::成员函数名;
+	string Student::*pname=
+		&Student::m_name;				//指向成员变量的指针
+
+	Student s1(20,"zhangfei"),*s2=new Student(22,"guanyu");
+
+	cout<<s1.*pname<<' '					//成员指针解引用
+		<<s2->*pname<<endl;				//间接成员指针解引用
+		
+	(s1.*pwho)();						//（对象.*成员函数指针）（实参表）;
+	(s2->*pwho)();						//（对象指针->*成员函数指针）（实参表）;
+	delete s2;
+	return 0;
+}
+
+结果:	zhangfei guanyu
+	20 zhangfei
+	22 guanyu
+
+
+
+三. 操作符重载
+1. 基本思想：在特定条件下，C++编译器有能力把一个由操作数和操作符组成的表达式，解释为一个全局或者成员函数调用，该全局或成员函数被称为操作符函数。程序设计者通过自己定义操作符函数，可以实现针对自定义类型的运算法则，并使之与内置类型一样参与各种表达式的运算。
+
+复数：3+4i
+
+
+
+2. 运算类双目操作符
+L#R				//#操作符 L R操作数  L+R L-R L*R L/R
+L.operator# (R); //左调右参	//成员函数
+::operator# (L,R); //左一右二 	//全局
+
+
+#include<iostream>
+using namespace std;
+
+class Complex{
+public:
+	Complex(int r=0,int i=0):
+		m_r(r),m_i(i){}
+	//返回类型中的const ：返回常对象禁止修改表达式的值
+	//参数类型中的const：支持带有常属性的右操作数
+	//函数的const：支持带有常属性的左操作数
+	Complex const operator+(Complex const& rhs) const{   	//自己定义操作符函数 成员函数
+		return Complex(m_r+rhs.m_r,m_i+rhs.m_i);
+	}
+	void print(void) const{
+		cout<<m_r<<'+'<<m_i<<"i"<<endl;
+	}
+private:
+	int m_r;
+	int m_i;
+	//友元函数授权声明
+	//友元函数
+	friend Complex const operator- (Complex const&,Complex const&);
+};
+
+Complex const operator- (Complex const& lhs,Complex const& rhs){	//自己定义操作符函数  全局
+	return Complex(lhs.m_r-rhs.m_r,lhs.m_i-rhs.m_i);
+}
+
+int main()
+{
+	Complex c1(1,2);
+	c1.print();
+	Complex c2(3,4);
+	c2.print();
+	Complex c3=c1+c2;
+//	Complex c3=c1.operator+(c2);
+	c3.print();
+	Complex const c4(5,6);
+	c3=c1+c4;
+	c3.print();
+	c3=c4+c1;
+	c3.print();
+
+	c3=c2-c1;
+//	c3=::operator-(c2,c1);
+	c3.print();
+	return 0;
+}
+
+结果：	1+2i
+	3+4i
+	4+6i
+	6+8i
+	6+8i
+	2+2i
+
+3. 插入提取操作符
+cout << R;
+::operator<< (cout,R); //全局
+cin >> R;
+::operator>> (cin,R); //全局
+
+
+#include<iostream>
+using namespace std;
+
+class Complex{
+public:
+	Complex(int r=0,int i=0):
+		m_r(r),m_i(i){}
+	void print(void) const{
+		cout<<m_r<<'+'<<m_i<<"i"<<endl;
+	}
+	friend istream& operator>> (
+		istream& is,Complex& c){
+		return is>>c.m_r>>c.m_i;
+	}
+	friend ostream& operator<< (
+		ostream& os,Complex const& c){
+		return os<< c.m_r<<'+'<<c.m_i<<'i';
+	}
+private:
+	int m_r;
+	int m_i;
+};
+
+int main()
+{
+	Complex c1,c2;
+	cin>>c1>>c2;
+//	::operator >>(::operator >>(cin,c1),c2);
+	cout<<c1<<' '<<c2<<endl;
+//	::operator<< (
+//		::operator<< (
+//			::operator<< (
+//				::operator<< (cout,c1),' '),c2),endl);
+	return 0;
+}
+
+结果：	12 15		//cin
+	2 3		//cin
+	12+15i 2+3i
+
+
+
+4. 运算类单目操作符
+#O/O#		//操作符操作数/操作数操作符  #操作符
+O.prerator#();	//成员函数
+::operator#(O);	//全局  
+
+
+#include<iostream>
+using namespace std;
+
+class Complex{
+public:
+	Complex(int r=0,int i=0):
+		m_r(r),m_i(i){}
+	void print(void) const{
+		cout<<m_r<<'+'<<m_i<<"i"<<endl;
+	}
+
+	Complex const operator-(void) const{
+		return Complex(-m_r,-m_i);  /*返回两个值 通过类的方法*/
+	}
+
+	friend int operator~(			//全局 需要加friend 友元
+		Complex const& c){
+		return c.m_r*c.m_r+c.m_i*c.m_i;
+	}
+private:
+	int m_r;
+	int m_i;
+};
+
+int main()
+{
+	Complex c1(1,2);
+	c1.print();//1+2i
+	Complex c2=-c1;
+// 	c2=c1.operator-();
+	c2.print();//-1+-2i
+
+	Complex c3(3,4);
+	int r2=~c3;
+//	int r2=::operator~(c3);
+	cout<<r2<<endl; //25
+	return 0;
+}
+
+结果：	1+2i
+	-1+-2i
+	25
+
+
+
+5. 自增自减操作符
+++O
+O.operator++();	//成员函数  前++ 括号里为void
+::operator++(O);//全局	   全局前++ 括号里为类数据类型
+
+O++
+O.operator++(0);  //成员函数  后++ 括号里为0   int 哑元	
+::operator++(O,0);//全局     全局后++ 括号里为类数据类型和0  int 哑元
+
+
+#include<iostream>
+using namespace std;
+
+class Complex{
+public:
+	Complex(int r=0,int i=0):
+		m_r(r),m_i(i){}
+	void print(void) const{
+		cout<<m_r<<'+'<<m_i<<"i"<<endl;
+	}
+	//前++
+	Complex& operator++ (void){
+		++m_r;
+		++m_i;
+		return *this;
+	}
+	//前--
+	friend Complex& operator-- (Complex& c){
+		--c.m_r;
+		--c.m_i;
+		return c;
+	}
+
+	//后++
+	Complex const operator++(int){
+			Complex old=*this;
+			++m_r;
+			++m_i;
+			return old;
+	}
+	//后--
+	friend Complex const operator-- (Complex& c,int){
+		Complex old=c;
+		--c.m_r;
+		--c.m_i;
+		return old;
+	}
+
+private:
+	int m_r;
+	int m_i;
+};
+
+int main()
+{
+	Complex c1(1,2);
+	Complex c2= ++c1;
+//	Complex c2=c1.operator++();
+	c1.print(); 			//2+3i
+	c2.print();			//2+3i
+	
+	++++++++c1;
+	c1.print();			//6+7i
+
+	int i=0;
+	cout<<++++++++i<<endl; 		//4
+//	cout<<++(++(++(++i)))<<endl;
+
+	c2=--c1;
+//	c2=::operator--(c1);
+	c1.print();			//5+6i;
+	c2.print();			//5+6i
+	--------c1;
+	c1.print();			//1+2i
+	
+
+	c2=c1++;
+//	c2=c1.operator++(0);
+	c1.print();			//2+3i
+	c2.print();			//1+2i
+
+	c2=c1--;
+//	c2=::operator--(c1,0);
+	c1.print();			//1+2i
+	c2.print();			//2+3i
+
+	return 0;
+}
+
+结果：	2+3i
+	2+3i
+	6+7i
+	4
+	5+6i
+	5+6i
+	1+2i
+	2+3i
+	1+2i
+	1+2i
+	2+3i
+
+
+6. 下标操作符（[]）
+用于在容器类型中以下标方式访问其中的数据元素。
+
+class 容器类型{
+public:
+	元素类型& operator[](int i){....}
+	元素类型 const& operator[](int i) const {
+		return const_cast<容器类型&>（*this）[i];
+	}
+};
+
+
+#include<iostream>
+using namespace std;
+
+class Array{
+private:
+	int m_array[256];
+public:
+	int& operator[](int i){
+		return m_array[i];
+	}
+	int const& operator[](int i) const{
+//		return m_array[i];
+		return const_cast<Array&>(*this)[i];//复用 调上面的函数
+	}
+};
+
+int main(void)
+{
+	Array a;
+	a[0]=10;
+//	a.operator[](0)=10;
+	a[1]=20;
+	a[2]=30;
+	cout << a[0]<<' '<<a[1]<<' '<<a[2]<<endl;
+	Array const*cp=&a;
+	cout<<(*cp)[0]<<endl;
+	return 0;
+}
+
+结果：	10 20 30
+	10
+
+
+7. 函数操作符(())
+	如果为一个类定义了形如：operator()的操作符函数，那么该类的实例化对象就可以被当作函数看待，所调用的就是 operator()操作符函数。操作符函数是唯一一种参数个数和返回值类型完全自由指定的操作符函数。一般把这种支持函数操作符的对象称为仿函数或函数子。
+
+
+#include<iostream>
+using namespace std;
+
+class Square{
+public:
+	int operator()(int x=5) const{
+		return x*x;
+	}
+	double operator()(double x,double y) const{
+		return x*x+y*y;
+	}
+};
+
+int main()
+{
+	Square square;
+	cout<<square(10)<<endl;
+//	cout<<square.operator()(10)<<endl;
+	cout<<square(0.3,0.4)<<endl;
+//	cout<<square.operator()(0.3,0.4)<<endl;
+	cout<<square()<<endl;
+	return 0;
+}
+
+结果：	100
+	0.25
+	25
+
+
+8. 间接成员访问操作符 解引用操作符  //？？？？？？？？？？？？？？？？？？？？？？？？？？？？？？
+返回对象地址或对象引用
+
+目标对象类型& operator* (void){
+	return 目标对象;
+}
+
+目标对象类型* operator-> (void){
+	return 目标对象的地址;
+}
+
+#include<memory>
+auto_ptr<T>:T可以是任何类型，用于封装一个动态对象的指针，通过局部智能指针对象在离开作用域时被析构的过程，delete动态创建的对象，避免内存泄漏。
+
+
+#include <cstdio>
+#include <iostream>
+#include <memory>
+using namespace std;
+class A {
+public:
+	A (int arg = 0) : m_var (arg) {
+		cout << "A构造：" << this << endl;
+	}
+	~A (void) {
+		cout << "A析构：" << this << endl;
+	}
+	int m_var;
+};
+void bar (void) {
+	{
+		A a;
+		int x = 1234;
+	}
+	int y = 5678;
+}
+class PA {
+public:
+	PA (A* p) : m_p (p) {}
+	~PA (void) { delete m_p; }
+	// 解引用操作符
+	A& operator* (void) {
+		return *m_p;
+	}
+	// 间接成员访问
+	A* operator-> (void) {
+		return &**this;
+//		return &(*(*this));
+//		return &((*this).operator*());
+//		return &(*m_p);
+//		return m_p;
+	}
+private:
+	A* m_p;
+};
+int foo (void) {
+	/*
+//	A* pa = new A (100);
+//	++pa->m_var;
+//	cout << (*pa).m_var << endl; // 101
+	PA pa (new A (100));
+	++pa->m_var;
+//	++pa.operator->()->m_var;
+	cout << (*pa).m_var << endl; // 101
+//	cout << pa.operator*().m_var << endl;
+	*/
+	auto_ptr<A> pa (new A (100));
+	++pa->m_var;
+	cout << (*pa).m_var << endl;
+	// ...
+	FILE* fp = fopen ("none", "r");
+	if (! fp) {
+		perror ("fopen");
+//		delete pa;
+		return -1;
+	}
+	// ...
+	fclose (fp);
+	// ...
+//	delete pa;
+	return 0;
+}
+int main (void) {
+	foo ();
+	return 0;
+}
+
+
+9. 自定义类型转换
+	1. 类型转换构造函数
+
+	class 目标类型{
+		目标类型（源类型 const& src）{...}
+	}
+
+	2. 类型转换操作符函数
+
+	class 源类型{
+		operator 目标类型（void）{return 目标类型对象;}
+	};
+
+	3. 源类型是基本类型，只能通过构造函数实现自定义类型转换；
+
+	   目标类型是基本类型，只能通过类型转换操作符函数实现自定义类型转换；
+
+	   如果源类型和目标类型都不是基本类型，两种自定义类型转换的实现方式可以任取其一，但是不要同时使用，避免歧义；
+	   源类型和目标类型都是基本类型，无法实现自定义类型转换，完全由编译器的内置规则实现两种类型的转换。
+
+	4. explicit 关键字的作用是将自定义类型转换强制为显式，C++98中该关键字只能被用于类型转换构造函数，C++2011则将其扩展到类型转换操作符函数。  //？？？？？？？？？？？？？？？？？？？？？？
+
+#include<iostream>
+using namespace std;
+class Cat;
+class Dog{
+public:
+	Dog(string const& name):
+		m_name(name){}
+	//类型转换构造函数
+	Dog(Cat const& name);
+	//类型转换操作符函数
+	operator Cat(void) const;  //狗变猫
+		
+			
+	void talk(void) const{
+		cout<<m_name<<":汪汪～～～"<<endl;
+	}
+private:
+	string m_name;
+	friend class Cat;//友元类
+};
+
+class Cat{
+public:
+	Cat(string const& name):
+		m_name(name){}
+	void talk(void) const{
+		cout<<m_name<<":喵喵～～～"<<endl;
+	}
+private:
+	string m_name;
+	friend class Dog;//友元类
+};
+
+Dog::Dog(Cat const& cat):
+	m_name(cat.m_name){}
+
+Dog::operator Cat (void) const{
+	return Cat (m_name);
+}
+int main()
+{
+	Dog dog("小白");
+	dog.talk();
+	Cat cat("小花");
+	cat.talk();
+
+//	dog=cat;
+//	dog.talk();
+	cat=dog;
+	cat.talk();
+	return 0;
+}
+
+结果：	小白:汪汪～～～
+	小花:喵喵～～～
+	小白:喵喵～～～
+
+
+
+10. new/delete 操作符
+
+new.cpp
+
+#include <cstdlib>
+#include <iostream>
+using namespace std;
+class A {
+public:
+	A (int arg = 0) : m_var (arg) {
+		cout << "A构造：" << this << endl;
+	}
+	~A (void) {
+		cout << "A析构：" << this << endl;
+	}
+	static void* operator new (size_t size) {
+		void* p = malloc (size);
+		cout << "new: " << size << ' '
+			<< p << endl;
+		return p;
+	}
+	static void operator delete (void* p) {
+		cout << "delete: " << p << endl;
+		free (p);
+	}
+	static void* operator new[](size_t size){
+		void* p = malloc (size);
+		cout << "new[]: " << size << ' '
+			<< p << endl;
+		return p;
+	}
+	static void operator delete[] (void* p) {
+		cout << "delete[]: " << p << endl;
+		free (p);
+	}
+private:
+	int m_var;
+};
+int main (void) {
+	A* pa = new A (100);
+//	A* pa = (A*)A::operator new (sizeof (A));
+//	A::A (pa, 100);
+	delete pa;
+//	A::~A (pa);
+//	A::operator delete (pa);
+	cout<<"----------------------"<<endl;
+	pa = new A[3];
+	cout << *((int*)pa-1) << endl;
+	delete[] pa;
+	return 0;
+}
+
+结果：	new: 4 0x8b47008
+	A构造：0x8b47008
+	A析构：0x8b47008
+	delete: 0x8b47008
+	----------------------
+	new[]: 16 0x8b47018	//16=4+3*4 最开头的4个字节里存的是数组的信息 数组的个数3个
+	A构造：0x8b4701c	//3个元素需要3次构造 也就需要3次析构
+	A构造：0x8b47020
+	A构造：0x8b47024
+	3			//最开头存数组个数3个
+	A析构：0x8b47024	
+	A析构：0x8b47020
+	A析构：0x8b4701c
+	delete[]: 0x8b47018	//delete 也是从最开头删 删16个字节
+
+
+
+11. 操作符重载的限制
+	1. 不是所有的操作符都能重载，以下操作符不允许被重载：
+		作用域限定操作符（::）
+		直接成员访问操作符（.）
+		直接成员指针解引用操作符（.*）
+		条件操作符（?:）
+		字节长度操作符（sizeof）
+		类型信息操作符（typeid）
+
+	2. 所有操作数都是基本类型的操作符无法重载
+		int operator+ (int a,int b){
+			return a-b;
+		}
+		x=1+1;
+		cout<<x<<endl; //0?  编译不过   基本类型操作符无法重载
+
+	3. 操作符重载无法改变优先级
+		Integer const operator^ (Integer const& x,int y) {...}
+		计算x的y次方
+		d=a+b^c; // (a+b)^c
+
+	4. 操作符重载无法改变操作符的目数
+		double operator% (Integer const& i){
+			return i.m_i/100.0;
+		}
+		x=50%;  //0.5?  无法通过编译  %是双目操作符
+
+	5. 无法通过操作符重载发明新的操作符
+		Double const operator@ (Double const& a, Double const& b){
+			return Double(sqrt(a.m_d*a.m_d+b.m_d*b.m_d));
+	   	}
+
+		c=3.0@4.0; //5.0? 只能在原有的操作符上该变其运算规则
+
+	6. 重载操作符不要违背正常人类的习惯，不要破坏代码的可读性，不要使操作符重载成为炫耀语法特性的奇技淫巧。
+
+
+
+
+
+
+
+
+
+
+
+
+
+ //作业：定义一个类表示3*3矩阵，支持如下运算
+ //+/-/*/+=/-=/*=/-(负)/前后++/前后--/<<
+//练习：增加下标操作符，矩阵对象可以通过类似二维数组的方式访问指定行列的元素
+#include<iostream>
+#include<iomanip>
+using namespace std;
+
+class M33{
+private:
+	int m_a[3][3];
+public:
+	M33(int n=0){
+		for(int i=0;i<3;++i)
+			for(int j=0;j<3;++j)
+				m_a[i][j]=n;
+	}
+	M33(int a[][3]){
+		for(int i=0;i<3;++i)
+			for(int j=0;j<3;++j)
+				m_a[i][j]=a[i][j];
+	}
+	//+
+	M33 const operator+(M33 const& m) const{
+		int a[3][3];
+		for(int i=0;i<3;++i)
+			for(int j=0;j<3;++j)
+				a[i][j]=m_a[i][j]+m.m_a[i][j];
+		return a;
+	}
+	//-
+	M33 const operator-(M33 const& m) const{
+		int a[3][3];
+		for(int i=0;i<3;++i)
+			for(int j=0;j<3;++j)
+				a[i][j]=m_a[i][j]-m.m_a[i][j];
+		return a;
+	}
+	//*
+	M33 const operator*(M33 const& m) const{
+		int a[3][3]={0};
+		for(int i=0;i<3;++i)
+			for(int j=0;j<3;++j)
+				for(int k=0;k<3;++k)
+					a[i][j]+=m_a[i][k]+m.m_a[k][j];
+		return a;
+	}
+	//+=
+	M33& operator+= (M33 const& m){
+		return *this=*this+m;
+	}
+	//-=	
+	M33& operator-= (M33 const& m){
+		return *this=*this-m;
+	}
+	//*=
+	M33& operator*= (M33 const& m){
+		return *this=*this*m;
+	}
+	//-(负)
+	M33 const operator- (void) const {
+		return M33()-*this;
+	}
+	//前++
+	M33& operator++ (void){
+		return *this+=M33(1);
+	}
+	//前--
+	M33& operator--(void){
+		return *this-=M33(1);
+	}
+	//后++
+	M33 const operator++(int){
+		M33 m=*this;
+		++*this;
+		return m;
+	}
+	//后--
+	M33 const operator--(int){
+		M33 m=*this;
+		--*this;
+		return m;
+	}
+	//<<
+	friend ostream& operator<< (ostream& os,M33 const& m){
+		for(int i=0;i<3;++i){
+			for(int j=0;j<3;++j)
+				os<<setw(4)<<m.m_a[i][j];
+			os<<endl;
+		}
+		return os;
+	}
+	//[]
+	int* operator[] (int i){
+		return m_a[i];
+	}
+	int const* operator[] (int i) const{
+		return const_cast<M33&>(*this)[i];
+	}
+};
+
+int main()
+{
+	int a1[3][3]={1,2,3,4,5,6,7,8,9};
+	M33 m1(a1);
+	int a2[3][3]={9,8,7,6,5,4,3,2,1};
+	M33 m2(a2);
+	cout<<m1+m2<<endl<<endl;
+	cout<<m1-m2<<endl<<endl;
+	cout<<m1*m2<<endl<<endl;
+	m1+=m2;
+	cout<<m1<<endl;
+	m1-=m2;
+	cout<<m1<<endl;
+	m1*=m2;
+	cout<<m1<<endl;
+	cout<<-m1<<endl;
+	cout<<++m2<<endl;
+	cout<<m2<<endl;
+	cout<<--m2<<endl;
+	cout<<m2<<endl;
+	cout<<m2++<<endl;
+	cout<<m2<<endl;
+	cout<<m2--<<endl;
+
+	++m2[1][1];
+// 	++m2.operator[](1)[1]
+	cout<<m2<<endl;
+	return 0;
+}
+
+结果：
+  10  10  10
+  10  10  10
+  10  10  10
+
+
+  -8  -6  -4
+  -2   0   2
+   4   6   8
+
+
+  24  21  18
+  33  30  27
+  42  39  36
+
+
+  10  10  10
+  10  10  10
+  10  10  10
+
+   1   2   3
+   4   5   6
+   7   8   9
+
+  24  21  18
+  33  30  27
+  42  39  36
+
+ -24 -21 -18
+ -33 -30 -27
+ -42 -39 -36
+
+  10   9   8
+   7   6   5
+   4   3   2
+
+  10   9   8
+   7   6   5
+   4   3   2
+
+   9   8   7
+   6   5   4
+   3   2   1
+
+   9   8   7
+   6   5   4
+   3   2   1
+
+   9   8   7
+   6   5   4
+   3   2   1
+
+  10   9   8
+   7   6   5
+   4   3   2
+
+  10   9   8
+   7   6   5
+   4   3   2
+
+   9   8   7
+   6   6   4
+   3   2   1
+
+

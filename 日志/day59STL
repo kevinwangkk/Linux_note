@@ -1,0 +1,1084 @@
+关键字：类模板  完全特（例）化   局部特（例）化  模板参数的缺省值  模板的非类型参数  typename 关键字
+	template 关键字
+
+
+三. 类模板
+
+1. 如果一个类中的成员变量，成员函数，成员类型，乃至基类中使用参数化的类型，那么这个类就是类模板。
+template<typename 类型形参1，typename 类型形参2，...>
+class 类模板名{...};
+
+template<typename M,typename R,typename A,typename V,typename T,typename B>
+class MyClass:public B{
+	M m_men;
+	R function(A arg){... V var;...}
+	typedef T* PT;
+};
+
+
+2. 使用
+类模板名<类型实参1，类型实参2,...> 对象（构造实参表）;
+类模板名<类型实参1，类型实参2,...>&引用 = 对象;
+类模板名<类型实参1，类型实参2,...>*指针 = &对象;
+|<.............类..............>|
+
+
+MyClass<char,short,int,float,double,string> mc;
+MyClass<char,short,int,float,double,string> &r = mc;
+MyClass<char,short,int,float,double,string> *p = &mc;
+MyClass mc;//错误
+MyClass& r=mc;//错误
+MyClass* p=&mc;//错误
+
+
+类模板本身不是一个类型，当然也不是一个合法作用域，因此既不能用于对象，引用和指针的声明，也不能放在作用域限定操作符（::）前面，只有带上足够的类型实参，这才是一个完整的类，可以用在一切类可以出现的上下文中。
+
+
+ctmpl.cpp
+
+#include <iostream>
+using namespace std;
+// 类模板
+template<typename T>
+class Comparator {
+public:
+	Comparator (T x, T y) :
+		m_x (x), m_y (y) {}
+	T min (void) const {
+		return m_x < m_y ? m_x : m_y;
+	}
+	T max (void) const {
+//		return m_x < m_y ? m_y : m_x;
+		return m_x > m_y ? m_x : m_y;
+	}
+private:
+	T m_x, m_y;
+};
+class Integer {
+public:
+	Integer (int i = 0) : m_i (i) {}
+	bool operator< (Integer const& i) const {
+		return m_i < i.m_i;
+	}
+	/*
+	bool operator> (Integer const& i) const {
+		return m_i > i.m_i;
+	}
+	*/
+	friend ostream& operator<< (ostream& os,
+		Integer const& i) {
+		return os << i.m_i;
+	}
+private:
+	int m_i;
+};
+int main (void) {
+	int a = 123, b = 456;
+	Comparator<int> ci (a, b);
+	cout << ci.min () << ' ' << ci.max ()
+		<< endl;
+	double c = 1.3, d = 4.6;
+	Comparator<double> cd (c, d);
+	cout << cd.min () << ' ' << cd.max ()
+		<< endl;
+	string e = "hello", f = "world";
+	Comparator<string> cs (e, f);
+	cout << cs.min () << ' ' << cs.max ()
+		<< endl;
+	char g[] = "hello", h[] = "world";
+	Comparator<string> cc (g, h);
+	cout << cc.min () << ' ' << cc.max ()
+		<< endl;
+	Comparator<Integer> cn (123, 456);
+	cout << cn.min () /*<< ' ' << cn.max ()*/  //不调用max的话，也可以不在类中写>运算符重载
+		<< endl;
+	return 0;
+}
+
+结果：	123 456
+	1.3 4.6
+	hello world
+	hello world
+	123
+
+
+
+3. 两步实例化
+
+       编译期     运行期
+类模板-实例化->类-实例化->对象
+       编译器     处理器     
+         V
+     成员函数的
+     第一次编译
+	 V
+     看到对成员
+     函数的调用
+     第二次编译
+
+
+
+4. 类型参数
+	1. 与函数模板不同，类模板并不要求实例化该模板的类型实参支持模板对类型的所有要求，实例化该模板类型的实参只需要满足用到的成员函数对它的要求即可。
+
+
+	2. 作为类模板的设计者，对实例化该模板的类型要求的越少越好。而作为类模板的使用者，对于用不着的功能可以不予以支持。
+
+
+5. 类模板的静态成员变量
+	类模板的静态成员变量，既不是一个模板一份实例，也不是一个对象一份实例，而是在该模板的每个实例化类中各有一份实例，且为该类的每个对象所共享。
+
+class A{int m_x;};
+
+     A
+  /  |  \
+ a1 a2  a3
+ x   x   x
+
+
+class A{static int x;};
+
+     A
+     x
+  /  |  \
+ a1 a2  a3
+
+
+template<typename ...> 
+class M{static int x;};
+
+		   M
+		   |
+      ——————————————————————————
+     |             |            |		
+     A		   B		C
+     x             x   		x
+  /  |  \	/  |  \	     /  |  \
+ a1 a2  a3     b1 b2  b3    c1 c2  c3
+
+
+static.cpp
+
+#include <iostream>
+using namespace std;
+template<typename T>
+class A {
+public:
+	static int s_var;
+};
+template<typename S>
+int A<S>::s_var = 0;
+int main (void) {
+	A<int> a1, a2;
+	A<double> a3, a4;
+	cout << &a1.s_var << ' ' << &a2.s_var
+		<< ' ' << &A<int>::s_var << endl;
+	cout << &a3.s_var << ' ' << &a4.s_var
+		<< ' ' << &A<double>::s_var << endl;
+	return 0;
+}
+
+结果：	0x804a0d8 0x804a0d8 0x804a0d8
+	0x804a0dc 0x804a0dc 0x804a0dc
+
+
+6. 递归实例化
+	用一个类模板的实例化类型实例化该类模板自身。主要用于表示在空间上具有递归特性的数据结构，如：多维数组，二叉树等等。  
+
+array.cpp
+
+#include <iostream>
+using namespace std;
+template<typename T = int, size_t S = 3>
+class Array {
+public:
+	T& operator[] (size_t i) {
+		return m_array[i];
+	}
+	T const& operator[] (size_t i) const {
+		return const_cast<Array&> (*this)[i];
+	}
+	friend ostream& operator<< (ostream& os,
+		Array const& array) {
+		for (size_t i = 0;
+			i < sizeof (array.m_array) /
+			sizeof (array.m_array[0]); ++i)
+			os << '[' << array.m_array[i]
+				<< ']';
+		return os;
+	}
+private:
+	T m_array[S];
+};
+
+template<char* s>
+void print (void) {
+	cout << s << endl;
+}
+
+int main (void) {
+	Array<int> ai;
+	ai[0] = 1000;
+	ai[1] = 2000;
+	ai[2] = 3000;
+	cout << ai << endl;
+	Array<string> as;
+	as[0] = "北京";
+	as[1] = "上海";
+	as[2] = "广州";
+	cout << as << endl;
+	Array<Array<int> > aa;  //注意写法 Array<Array<int> >  空格必须有   递归实例化
+	for (int i = 0; i < 3; ++i)
+		for (int j = 0; j < 3; ++j)
+			aa[i][j] = (i+1)*10+j+1;
+	cout << aa << endl;
+
+	return 0;
+}
+
+结果：	[1000][2000][3000]
+	[北京][上海][广州]
+	[[11][12][13]][[21][22][23]][[31][32][33]]
+
+
+
+
+7. 完全特（例）化 （全部参数都特化）
+	一个类模板在满足大多数类型要求的同时，可能对一些特殊类型无法给出正确的结果，或者虽然能给出正确的结果，但性能不佳。这时候可以提供一个针对特殊类型的特殊实现，以弥补通用版本在功能和性能方面的不足。
+
+	1. 全类特化
+	template<>
+	class 类模板名<特化所针对的类型> {定义一个具体类};
+
+	当用户用特化所针对的类型实例化该类模板时，编译器将选择特化的版本而非通用版本。在特化版本中，程序设计者可以完全依赖所针对的特殊类型进行功能设计和性能优化。
+
+
+spec.cpp
+
+#include <cstring>
+#include <iostream>
+using namespace std;
+template<typename T>
+T max (T x, T y) {		//函数模板
+	return x < y ? y : x;
+}
+char* max (char* x, char* y) {	//函数
+	return strcmp (x, y) < 0 ? y : x;
+}
+// 通用版本
+template<typename T>
+class Comparator {
+public:
+	Comparator (T x, T y) :
+		m_x (x), m_y (y) {}
+	T max (void) const {
+		return m_x < m_y ? m_y : m_x;
+	}
+private:
+	T m_x, m_y;
+};
+
+// 针对char*类型的全类特化版本
+template<>
+class Comparator<char*> {
+public:
+	Comparator (char* x, char* y) :
+		m_x (x), m_y (y) {}
+	char* max (void) const {
+		return strcmp (m_x, m_y) < 0 ?
+			m_y : m_x;
+	}
+private:
+	char* m_x, *m_y;
+};
+/*
+// 针对char*类型的成员特化版本
+template<>
+char* Comparator<char*>::max (void) const {
+	return strcmp (m_x, m_y) < 0 ?
+		m_y : m_x;
+}
+*/
+int main (void) {
+	int a = 123, b = 456;
+	cout << ::max (a, b) << endl;
+	char g[] = "hello", h[] = "world";
+	cout << ::max (g, h) << endl;		//调用的是函数
+	cout << ::max<string> (g, h) << endl;
+	cout << ::max (string (g), string (h))
+		<< endl;
+	cout << Comparator<int> (a, b).max ()
+		<< endl;
+	cout << Comparator<char*> (g, h).max ()
+		<< endl;
+	return 0;
+}
+
+结果：	456
+	world
+	world
+	world
+	456
+	world
+
+
+
+	2. 成员函数特化
+	如果与特殊类型相关的仅仅是极个别的成员函数，那么也可以只针对这些成员函数做专门的特化。
+
+	template<>
+	返回类型 类模板名<特化所针对的类型>::成员函数名（形参表）[常属性][异常说明] {
+		定义一个具体函数
+	}
+
+	成员特化只是给出一个成员函数针对特殊类型的新定义，其声明依然在通用版本中，因此特化版本的原型和通用版本的原型，除了一个是具体类型，一个是参数类型以外，必须完全一致。
+
+
+spec.cpp
+
+#include <cstring>
+#include <iostream>
+using namespace std;
+template<typename T>
+T max (T x, T y) {
+	return x < y ? y : x;
+}
+char* max (char* x, char* y) {
+	return strcmp (x, y) < 0 ? y : x;
+}
+// 通用版本
+template<typename T>
+class Comparator {
+public:
+	Comparator (T x, T y) :
+		m_x (x), m_y (y) {}
+	T max (void) const {
+		return m_x < m_y ? m_y : m_x;
+	}
+private:
+	T m_x, m_y;
+};
+/*
+// 针对char*类型的全类特化版本
+template<>
+class Comparator<char*> {
+public:
+	Comparator (char* x, char* y) :
+		m_x (x), m_y (y) {}
+	char* max (void) const {
+		return strcmp (m_x, m_y) < 0 ?
+			m_y : m_x;
+	}
+private:
+	char* m_x, *m_y;
+};
+*/
+// 针对char*类型的成员特化版本
+template<>
+char* Comparator<char*>::max (void) const {
+	return strcmp (m_x, m_y) < 0 ?
+		m_y : m_x;
+}
+int main (void) {
+	int a = 123, b = 456;
+	cout << ::max (a, b) << endl;
+	char g[] = "hello", h[] = "world";
+	cout << ::max (g, h) << endl;
+//	cout << ::max<string> (g, h) << endl;
+//	cout << ::max (string (g), string (h))
+//		<< endl;
+	cout << Comparator<int> (a, b).max ()
+		<< endl;
+	cout << Comparator<char*> (g, h).max ()
+		<< endl;
+	return 0;
+}
+
+
+
+	3. 从类模板的设计角度讲，不要将特化作为模板缺乏一般性的借口。所谓类模板特化应该被视为一致无奈之举，或者是一种权宜之计，而不应作为设计原则。
+
+
+
+8. 局部特（例）化 （部分参数特化）
+template<typename A, typename B>
+class X { ... }; // 通用版本
+
+template<>
+class X<int, short> { ... }; // 完全特化
+
+template<typename A>
+class X<A, short> { ... }; // 局部特化
+
+
+	类模板可以被局部的特例化，即一方面为类模板指定特定的实现，另一方面又允许用户对部分类型参数自行指定。
+
+	完全特化 > 局部特化 > 通用版本
+
+	完全特化既可以通过全类特化实现，也可以通过成员特化实现。
+	局部特化只能做全类特化，不能做成员特化。
+
+part.cpp
+
+#include <iostream>
+using namespace std;
+// 通用版本
+template<typename A, typename B>
+class X {
+public:
+	static void print (void) {
+		cout << "X<A,B>" << endl;
+	}
+};
+// 完全特化
+template<>
+class X<int, short> {
+public:
+	static void print (void) {
+		cout << "X<int,short>" << endl;
+	}
+};
+// 局部特化
+template<typename A>
+class X<A, short> {
+public:
+	static void print (void) {
+		cout << "X<A,short>" << endl;
+	}
+};
+template<typename A>
+class X<A, A> {
+public:
+	static void print (void) {
+		cout << "X<A,A>" << endl;
+	}
+};
+template<typename A, typename B>
+class X<A*, B*> {
+public:
+	static void print (void) {
+		cout << "X<A*,B*>" << endl;
+	}
+};
+template<typename A>
+class X<A*, A*> {
+public:
+	static void print (void) {
+		cout << "X<A*,A*>" << endl;
+	}
+};
+template<typename A, typename B>
+class X<A[], B[]> {
+public:
+	static void print (void) {
+		cout << "X<A[],B[]>" << endl;
+	}
+};
+// 完全特化既可以通过全类特化实现，
+// 也可以通过成员特化实现
+template<>
+void X<string, string>::print (void) {
+	cout << "X<string,string>" << endl;
+}
+/* 局部特化只能通过全类特化实现，
+   不可以通过成员函数特化实现     //成员函数特化 写的是函数 ，局部特化写的是类
+template<typename B>
+void X<string, B>::print (void) {
+	cout << "X<string,B>" << endl;
+}
+*/
+int main (void) {
+	// 完全特化->局部特化->通用版本
+	X<int, double>::print ();
+	X<int, short>::print ();
+	X<double, short>::print ();
+	X<int, int>::print ();
+	X<int*, short*>::print ();
+	X<int*, int*>::print ();
+	X<int[], short[]>::print ();
+	return 0;
+}
+
+结果：	X<A,B>
+	X<int,short>
+	X<A,short>
+	X<A,A>
+	X<A*,B*>
+	X<A*,A*>
+	X<A[],B[]>
+
+
+
+9. 案例：std::auto_ptr<T>的简化实现
+
+autoptr.cpp 
+
+#include <iostream>
+using namespace std;
+template<typename T>
+class AutoPtr {
+public:
+	AutoPtr (T* p = NULL) : m_p (p) {}
+	// 拷贝构造————转移拷贝
+	AutoPtr (AutoPtr& that) : m_p (
+		that.release ()){}
+	// 拷贝赋值————转移拷贝
+	AutoPtr& operator= (AutoPtr& that) {
+		if (&that != this)
+			reset (that.release ());
+		return *this;
+	}
+	~AutoPtr (void) {
+		if (m_p) {
+			delete m_p;
+			m_p = NULL;
+		}
+	}
+	T& operator* (void) const {
+		return *m_p;
+	}
+	T* operator-> (void) const {
+		return &**this;
+	}
+private:
+	T* release (void) {
+		T* p = m_p;
+		m_p = NULL;
+		return p;
+	}
+	void reset (T* p) {
+		if (p != m_p) {
+			delete m_p;
+			m_p = p;
+		}
+	}
+	T* m_p;
+};
+template<typename T>
+class AutoPtr<T[]> {
+public:
+	AutoPtr (T* p = NULL) : m_p (p) {}
+	// 拷贝构造————转移拷贝
+	AutoPtr (AutoPtr& that) : m_p (
+		that.release ()){}
+	// 拷贝赋值————转移拷贝
+	AutoPtr& operator= (AutoPtr& that) {
+		if (&that != this)
+			reset (that.release ());
+		return *this;
+	}
+	~AutoPtr (void) {
+		if (m_p) {
+			delete[] m_p;
+			m_p = NULL;
+		}
+	}
+	T& operator* (void) const {
+		return *m_p;
+	}
+	T* operator-> (void) const {
+		return &**this;
+	}
+private:
+	T* release (void) {
+		T* p = m_p;
+		m_p = NULL;
+		return p;
+	}
+	void reset (T* p) {
+		if (p != m_p) {
+			delete[] m_p;
+			m_p = p;
+		}
+	}
+	T* m_p;
+};
+class A {
+public:
+	A (void) {
+		cout << "A构造：" << this << endl;
+	}
+	~A (void) {
+		cout << "A析构：" << this << endl;
+	}
+	int m_data;
+};
+int main (void) {
+	AutoPtr<A> p1 (new A);
+	p1->m_data = 100;
+	cout << (*p1).m_data << endl;
+	AutoPtr<A> p2 = p1; // 拷贝构造
+	++p2->m_data;
+	cout << (*p2).m_data << endl;
+	AutoPtr<A> p3 (new A);
+	p3->m_data = 200;
+	p2 = p3; // 拷贝赋值
+	cout << (*p2).m_data << endl;
+	cout << "---------------" << endl;
+	AutoPtr<A[]> p4 (new A[3]);
+	return 0;
+}
+
+结果：	A构造：0x9733008
+	100
+	101
+	A构造：0x9733018
+	A析构：0x9733008
+	200
+	---------------
+	A构造：0x973302c
+	A构造：0x9733030
+	A构造：0x9733034
+	A析构：0x9733034
+	A析构：0x9733030
+	A析构：0x973302c
+	A析构：0x9733018
+
+
+
+四. 模板参数的缺省值
+template<typename A=int,typename B=double,...>
+
+	模板的参数可以带有缺省值，实例化该模板时，如果提供了类型实参，就用所提供的实参，如果没有提供类型实参，就取相应的缺省值。
+	
+	如果某个模板参数带有了缺省值，那么它后面的所有参数必须都带有缺省值。	
+
+
+defarg.cpp
+
+#include <iostream>
+#include <typeinfo>
+using namespace std;
+template<typename A = int,
+	typename B = /*double*/A,
+	typename C = string>
+class X {
+public:
+	void print (void) const {
+		cout << typeid (m_a).name () << ' '
+			<< typeid (m_b).name () << ' '
+			<< typeid (m_c).name () << endl;
+	};
+private:
+	A m_a;
+	B m_b;
+	C m_c;
+};
+template<typename A = int,
+	typename B = /*double*/A,
+	typename C = string>
+void foo (void) {
+	A a;
+	B b;
+	C c;
+	cout << typeid (a).name () << ' '
+		<< typeid (b).name () << ' '
+		<< typeid (c).name () << endl;
+}
+template<typename T = int>
+void bar (T arg) {
+	cout << typeid (arg).name () << endl;
+}
+int main (void) {
+	X<char, short, long> x1;
+	x1.print (); // c s l
+	X<char, short> x2;
+	x2.print (); // c s Ss
+	X<char> x3;
+	x3.print (); // c d Ss
+	X<> x4;
+	x4.print (); // i d Ss
+	foo<char, short, long> ();
+	foo<char, short> ();
+	foo<char> ();
+	foo<> ();
+	foo ();
+	bar (3.14);
+	return 0;
+}
+
+结果：	c s l
+	c s Ss
+	c c Ss
+	i i Ss
+	c s l
+	c s Ss
+	c c Ss
+	i i Ss
+	i i Ss
+	d
+
+
+	void foo(int x,int y=10) {...} //OK
+	void foo(int x,int y=x) {...}  //ERROR
+	函数的参数，后面参数不能用前面的参数作为其缺省值。
+	模板的参数，后面参数可以用前面的参数作为其缺省值。
+	template<typename A,typename B=A> ...
+
+	C++98中，函数模板不能带有缺省参数，但是C++2011可以，
+	如果使用GNU的C++编译器需要加上编译选项：
+	-std=c++0x//4.8以下版本
+	-std=c++11//4.8及4.8以上版本
+
+	当函数模板隐式推断的参数类型与模板参数的缺省值不一致时，/*以隐式推断的类型为准*/，忽略其缺省值。
+
+
+
+
+五. 模板的非类型参数 
+
+	模板的参数并不局限于类型参数，普通的数值也可以作为模板的参数，但这些参数前面不要写typename，而要注明其具体类型。
+	传递给模板非类型参数的实参，可以是常量、常量表达式、带有常属性(const)的变量，但是不能同时具有挥发性(volatile)。此外，关于模板的非类型参数还有以下额外限制：
+	1. 不能是浮点类型：float/double/long double；
+	2. 不能是非标量类型：Student/Teacher/Cat/Dog；
+	3. 可以是字符串但是只能用字符指针作为形参，且只能用非静态的全局字符数组作为实参，否则无法通过编译。
+
+array.cpp
+
+#include <iostream>
+using namespace std;
+template<typename T = int, size_t S = 3> //普通的数值也可以作为模板的参数，但这些参数前面不要写typename，而要注明其具体类型。
+class Array {
+public:
+	T& operator[] (size_t i) {
+		return m_array[i];
+	}
+	T const& operator[] (size_t i) const {
+		return const_cast<Array&> (*this)[i];
+	}
+	friend ostream& operator<< (ostream& os,
+		Array const& array) {
+		for (size_t i = 0;
+			i < sizeof (array.m_array) /
+			sizeof (array.m_array[0]); ++i)
+			os << '[' << array.m_array[i]
+				<< ']';
+		return os;
+	}
+private:
+	T m_array[S];
+};
+template<int x>
+int square (void) {
+	return x * x;
+}
+/*
+template<double x>
+double fsquare (void) {	  不能是浮点类型：float/double/long double；
+	return x * x;
+}
+template<string s>
+void print (void) {
+	cout << s << endl;
+}
+*/
+template<char* s>		//可以是字符串但是只能用字符指针作为形参
+void print (void) {
+	cout << s << endl;
+}
+char s[] = "非静态全局字符数组";//只能用非静态的全局字符数组作为实参，否则无法通过编译。
+//可以是字符串但是只能用字符指针作为形参，且只能用非静态的全局字符数组作为实参，否则无法通过编译。
+int main (void) {
+	Array<int> ai;
+	ai[0] = 1000;
+	ai[1] = 2000;
+	ai[2] = 3000;
+	cout << ai << endl;
+	Array<string> as;
+	as[0] = "北京";
+	as[1] = "上海";
+	as[2] = "广州";
+	cout << as << endl;
+	Array<Array<int> > aa;
+	for (int i = 0; i < 3; ++i)
+		for (int j = 0; j < 3; ++j)
+			aa[i][j] = (i+1)*10+j+1;
+	cout << aa << endl;
+//	Array<string, 5> as5;    //都可以
+//	Array<string, 2+3> as5;  //都可以
+	size_t const /*volatile*/ S = 5; //必须是常量 但不能有易变性质
+	Array<string, S> as5;  
+	as5[0] = "济南";
+	as5[1] = "青岛";
+	as5[2] = "滨州";
+	as5[3] = "菏泽";
+	as5[4] = "临沂";
+	cout << as5 << endl;
+	cout << square <13> () << endl;
+//	cout << fsquare <1.3> () << endl;
+//	print<"string"> ();
+//	print<"字面值"> ();
+//	char s[] = "局部字符数组";
+//	print<s> ();
+//	static char s[] = "静态局部字符数组";
+//	print<s> ();
+	print<s> ();
+	return 0;
+}
+
+结果：	[1000][2000][3000]
+	[北京][上海][广州]
+	[[11][12][13]][[21][22][23]][[31][32][33]]
+	[济南][青岛][滨州][菏泽][临沂]
+	169
+	非静态全局字符数组
+
+六. typename 关键字
+
+1. 声明模板的类型参数
+template<typename T,...> ...
+等价于class
+template<class T,...> ...
+
+
+2. 解决嵌套依赖
+所谓嵌套依赖，就是依赖于模板类型参数的类型的嵌套类型。
+在做这种用法的场合，不能换成class关键字。
+
+typename.cpp
+
+#include <iostream>
+#include <typeinfo>
+using namespace std;
+class A {
+public:
+	typedef unsigned long long ULL;
+};
+template<typename X>
+void foo (void) {
+	typename/*加上typename关键字*/ X::ULL x;// 嵌套依赖 解决了在第一次编译时就进行第二次编译的内容
+	cout << typeid (x).name () << endl;
+}
+template<class T>
+class B {
+public:
+	class C {}; // 嵌套类，类中类，内部类
+};
+template<class T>
+void bar (void) {
+	typename B<T>::C c;
+	cout << typeid (c).name () << endl;
+}
+int main (void) {
+	A::ULL x;
+	cout << typeid (x).name () << endl;
+	foo<A> ();
+	bar<int> ();
+	return 0;
+}
+
+结果：	y
+	y
+	N1BIiE1CE
+
+
+
+七. template 关键字
+
+1. 声明模板
+template<...> ...
+
+2. 解决嵌套模板
+	所谓嵌套模板，就是依赖于模板类型参数的类型的内部模板。而且有时还需和typename关键字配合使用。
+
+
+#include <iostream>
+#include <typeinfo>
+using namespace std;
+class A {
+public:
+	typedef unsigned long long ULL;
+};
+template<typename X>
+void foo (void) {
+	typename/*加上typename关键字*/ X::ULL x; // 嵌套依赖 解决了在第一次编译时就进行第二次编译的内容
+	cout << typeid (x).name () << endl;
+}
+template<class T>
+class B {
+public:
+	class C {}; // 嵌套类，类中类，内部类
+};
+template<class T>
+void bar (void) {
+	typename B<T>::C c;	//嵌套类 需和typename关键字配合使用
+	cout << typeid (c).name () << endl;
+}
+int main (void) {
+	A::ULL x;
+	cout << typeid (x).name () << endl;
+	foo<A> ();
+	bar<int> ();
+	return 0;
+}
+
+结果：	y
+	y
+	N1BIiE1CE
+
+
+
+// 练习：分别用C和C++的风格实现一个泛型的快速
+// 快速排序算法函数
+
+
+#include<iostream>
+using namespace std;
+
+//C风格非泛型的快速排序
+void qsort1(int data[],size_t left,size_t right)
+{
+	size_t p=(left+right)/2;
+	int pivot=data[p];
+	size_t i=left,j=right;
+	while(i<j)
+	{
+		for(;!(i>=p||pivot<data[i]);++i);
+		if(i<p){
+			data[p]=data[i];
+			p=i;
+		}
+		for(;!(j<=p||pivot>data[j]);--j);
+		if(j>p){
+			data[p]=data[j];
+			p=j;
+		}
+	}
+	data[p]=pivot;
+	if(p-left>1)
+		qsort1(data,left,p-1);
+	if(right-p>1)
+		qsort1(data,p+1,right);
+}
+
+//C++风格泛型的快速排序
+template<typename T>
+void qsort2(T data[],size_t left,size_t right)
+{
+	size_t p=(left+right)/2;
+	T pivot=data[p];
+	size_t i=left,j=right;
+	while(i<j)
+	{
+		for(;!(i>=p||pivot<data[i]);++i);
+		if(i<p){
+			data[p]=data[i];
+			p=i;
+		}
+		for(;!(j<=p||pivot>data[j]);--j);
+		if(j>p){
+			data[p]=data[j];
+			p=j;
+		}
+	}
+	data[p]=pivot;
+	if(p-left>1)
+		qsort2(data,left,p-1);
+	if(right-p>1)
+		qsort2(data,p+1,right);
+}
+
+//C风格泛型的快速排序
+void qsort4(void* base,size_t left,size_t right,size_t size,int(*compar)(void const*,void const*))
+{
+	size_t p=(left+right)/2;
+	void* pivot=malloc(size);
+	memcpy(pivot,base+p*size,size);
+	size_t i=left,j=right;
+	while(i<j){
+		for(;!(i>=p||compar(pivot,base+i*size)<0);++i);
+		if(i<p){
+			memcpy()
+		}
+
+	}	
+}
+//base - 数组首地址
+//nmemb - 数组元素个数
+//size - 数组元素字节数
+//compar - 比较函数指针
+void qsort3(void* base,size_t nmemb,size_t size,int(*compar)(void const*,void const*))
+{
+	qsort4(base,0,nmemb-1,size,compar);
+
+
+
+
+}
+class Student{
+	string m_name;
+	int m_age;
+	int m_score;
+000000000000000000000	friend ostream& operator<<();
+public:
+	Student(string const& name,int age,int scoret:m_name(name),m_age(age),m_score(score)){}
+	bool operator<(Student const& s) const{
+//		return m_age>s.m_age;
+//		return m_score<s.m_score;
+		if(m_age==s.m_age)
+			return m_score<s.m_score;
+		return m_age>s.m_age;
+000000000000000000000000	friend ostream& operator<<()
+	}
+	
+};
+
+int main()
+{
+	int ai[]={10,80,30,60,50,40,70,20,90};
+	for(size_t i=0;i<sizeof(ai)/sizeof(ai[0])-1;++i)
+		cout<<ai[i]<<' ';
+	cout<<endl;
+//	qsort1(ai,0,sizeof(ai)/sizeof(ai[0])-1);
+	qsort2(ai,0,sizeof(ai)/sizeof(ai[0])-1);
+	for(size_t i=0;i<sizeof(ai)/sizeof(ai[0])-1;++i)
+		cout<<ai[i]<<' ';
+	cout<<endl;
+
+	string as[]={"beijing","tianj","ssee","feee","aawww","vveef","qqqq","iii","ooo","app"};
+//	size=sizeof(as)/sizeof(as[0]);
+	for(size_t i=0;i<sizeof(as)/sizeof(as[0])-1;++i)
+		cout<<as[i]<<' ';
+	cout<<endl;
+	qsort2(as,0,sizeof(as)/sizeof(as[0])-1);
+	for(size_t i=0;i<sizeof(as)/sizeof(as[0])-1;++i)
+		cout<<as[i]<<' ';
+	cout<<endl;
+
+	Student at[]={
+		Student("z",20,90),
+		Student("x",30,80),
+		Student("c",20,70),
+		Student("v",20,60),
+		Student("b",20,50)}
+	0000000
+	0000000
+	0000000
+	return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

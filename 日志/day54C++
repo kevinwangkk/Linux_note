@@ -1,0 +1,238 @@
+关键字：多重继承
+
+6. 多重继承
+	1. 概念
+	如果一个子类同时从多个基类继承，就形成多重继承的结构。
+
+		   电话   播放器   计算机
+		      \      |      /
+		          智能手机
+
+	2. 语法：在类的继承表中依次写出子类的每个基类及其继承方式
+
+	class 子类：继承方式1 基类1，继承方式2 基类2，...{...};
+
+	子类从多个基类中继承它们的成员，任意一个基类的成员都可以被当做子类的成员，在子类内部或外部被访问，前提是不违背访问控制属性和继承方式的约束。
+
+	3. 对象模型
+	
+	a.子类对象中的多个基类子对象，按照继承表的顺序依次被构造，并从低地址到高地址排列，析构的顺序则与构造的顺序相反。
+	b.将继承自多个基类的子类类型的指针，隐式或静态转换为它的基类类型，编译器会根据各个基类子对象在子类对象中的内存布局，进行适当的偏移计算，以保证指针的类型与其所指向目标对象的类型一致，反之亦然。
+
+smart.cpp
+
+#include <iostream>
+using namespace std;
+// 电话
+class Phone {
+public:
+	Phone (string const& number) :
+		m_number (number) {
+		cout << "Phone构造：" << this
+			<< endl;
+	}
+	void call (string const& rcvr) const {
+		cout << m_number << "致电给"
+			<< rcvr << endl;
+	}
+private:
+	string m_number;
+};
+// 播放器
+class Player {
+public:
+	Player (string const& media) :
+		m_media (media) {
+		cout << "Player构造：" << this
+			<< endl;
+	}
+	void play (string const& clip) const {
+		cout << m_media << "播放器播放"
+			<< clip << endl;
+	}
+private:
+	string m_media;
+};
+// 计算机
+class Computer {
+public:
+	Computer (string const& os) :
+		m_os (os) {
+		cout << "Computer构造：" << this
+			<< endl;
+	}
+	void run (string const& app) const {
+		cout << "在" << m_os << "系统上运行"
+			<< app << endl;
+	}
+private:
+	string m_os;
+};
+// 智能电话
+class SmartPhone : public Phone,
+	public Player, public Computer {
+public:
+	SmartPhone (string const& number,
+		string const& media,
+		string const& os) : Phone (number),
+		Player (media), Computer (os) {
+		cout << "SmartPhone构造：" << this
+			<< endl;
+	}
+};
+int main (void) {
+	SmartPhone sp ("13910110072", "MP4",
+		"iOS");
+	sp.call ("01062332018");
+	sp.play ("小苹果.mp4");
+	sp.run ("微信");
+	SmartPhone* psp = &sp;
+	Phone* pp = psp;		//隐式类型转换 向上造型
+	Player* pl = psp;		
+	Computer* pc = psp;
+	cout << psp << endl;			//0xbfe6abd4
+
+	//子类对象中的多个基类子对象，按照继承表的顺序依次被构造，并从低地址到高地址排列，析构的顺序则与构造的顺序相反。
+	cout << pp << ' ' << pl << ' ' << pc	//0xbfe6abd4 0xbfe6abd8 0xbfe6abdc
+		<< endl;	//编译器会根据各个基类子对象在子类对象中的内存布局，进行适当的偏移计算
+
+
+	cout << static_cast<SmartPhone*> (pp)	//0xbfe6abd4
+		<< endl;
+	cout << static_cast<SmartPhone*> (pl)	//0xbfe6abd4	静态类型转换回去 都指向同一个地址
+		<< endl;
+	cout << static_cast<SmartPhone*> (pc)	//0xbfe6abd4
+		<< endl;
+
+	cout << reinterpret_cast<SmartPhone*> 	//0xbfe6abd4
+		(pp) << endl;
+	cout << reinterpret_cast<SmartPhone*> 	//0xbfe6abd8	用reinterpret转换就不会指向同一个地址
+		(pl) << endl;					//只保证值的一致
+	cout << reinterpret_cast<SmartPhone*> 	//0xbfe6abdc
+		(pc) << endl;
+	return 0;
+}
+
+结果：	Phone构造：0xbfe6abd4
+	Player构造：0xbfe6abd8
+	Computer构造：0xbfe6abdc
+	SmartPhone构造：0xbfe6abd4
+	13910110072致电给01062332018
+	MP4播放器播放小苹果.mp4
+	在iOS系统上运行微信
+	0xbfe6abd4
+	0xbfe6abd4 0xbfe6abd8 0xbfe6abdc
+	0xbfe6abd4
+	0xbfe6abd4
+	0xbfe6abd4
+	0xbfe6abd4
+	0xbfe6abd8
+	0xbfe6abdc
+
+
+
+	4. 名字冲突与重载
+	
+	a.如果多个基类中存在相同的标识符，将在子类中产生名字冲突，可以通过作用域限定解决。
+	
+	b.在不同基类中声明的同名异参成员函数，由于存在名字冲突，且作用域不同，因而无法在子类形成重载，除非通过using声明 将其强制引入子类的作用域，构成重载关系。
+
+
+name.cpp
+
+#include <iostream>
+using namespace std;
+class A {
+public:
+	int abc;
+	void foo (void) {
+		cout << "A::foo()" << endl;
+	}
+};
+class B {
+public:
+	typedef int abc;
+	void foo (int x /* = 0 void */) {
+		cout << "B::foo()" << endl;
+	}
+};
+class C : public A, public B {
+public:
+	using A::foo;
+	using B::foo;	//通过using声明 将其强制引入子类的作用域，构成重载关系
+};
+int main (void) {
+	C c;
+	c.A::abc = 10;
+	C::B::abc i = 10;//多个基类中存在相同的标识符，将在子类中产生名字冲突，可以通过作用域限定解决
+//	c.A::foo ();
+//	c.B::foo (123);
+	c.foo ();
+	c.foo (123);	//构成重载
+	return 0;
+}	
+
+结果：	A::foo()
+	B::foo()
+
+
+作业：
+#include <iostream>
+using namespace std;
+//   A
+//  / \
+// B   C
+//  \ /
+//   D
+class A {
+public:
+	A (int data) : m_data (data) {cout<<"A构造："<<this<<endl;}
+protected:
+	int m_data;
+};
+class B : public A {
+public:
+	B (int data) : A (data) { cout<<"B构造："<<this<<endl;}
+	void set (int data) {
+		m_data = data;
+	}
+};
+class C : public A {
+public:
+	C (int data) : A (data) {cout<<"C构造："<<this<<endl;}
+	int get (void) const {
+		return m_data;
+	}
+};
+class D : public B, public C {
+public:
+	D (int data) : B (data), C (data) {cout<<"构造："<<this<<endl;}
+};
+int main (void) {
+	D d (100);
+	cout << d.get () << endl; // 100
+	d.set (200);
+	cout << d.get () << endl; // 100? 200?
+	return 0;
+}
+
+结果：	100
+	100  //为什么是100
+
+C中的get
+B中的set
+
+并没有改变m_data的值  并没有赋值
+
+A构造：0xbfeb9a88		//两个A 
+B构造：0xbfeb9a88
+A构造：0xbfeb9a8c
+C构造：0xbfeb9a8c
+D构造：0xbfeb9a88
+100
+100
+
+
+
+
+

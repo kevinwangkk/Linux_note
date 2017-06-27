@@ -1,0 +1,158 @@
+
+
+
+arm-linux-nm -na uart>sym    地址表
+vi sym      
+
+arm-linux-objdump -S uart>uart.s   生成汇编指令
+vi uart.s
+
+
+串口参数：
+1、起始位  一个周期的0
+
+2、停止位：1、1.5、2 个周期的0
+3、数据的位数 5、6、7、8
+4、校验位（奇偶校验）
+5、速度（传输的速率）每秒钟多少位
+
+ULCON0
+UCON0
+UFCON0    = 0
+UMCON0    = 0
+
+UTRSTAT0  状态寄存器（只读）
+
+配置串口波特率
+UBRDIV0
+UDIVSLOT0
+
+UTXH0    W
+URXH0    R
+          
+串口的发送和接收管脚
+    看看GPIO章节
+    把对应的管脚配置为串口功能
+    
+计算波特率：
+    我们串口编程时使用：PCLK做时钟源
+    PCLK=66500000 Hz     66.5MHZ
+    波特率是115200
+    请计算 UBRDIV0  UDIVSLOT0寄存器的值
+    UBRDIV0 = 35
+    UDIVSLOT0 = 0x80
+    
+ 
+ 完成任务：
+    编写程序通过开发板串口向PC发送字符，
+    （PC端DNW软件就能收到）
+    1、串口参数：
+       1、停止位个数 1
+       2、不使用校验
+       3、数据位数是8位
+       4、波特率是115200
+    2、我们需要指定开发板和PC连接的串口是
+       S5PV210的哪个串口（S5PV210有四个）
+       我们查到用的 S5PV210的 UART0
+       
+       座的2脚（PC串口的2脚）  RxD 接收
+       座的3脚（PC串口的3脚）  TxD 发送
+       
+       PC3--->S5PV210的 RxD0
+       PC2--->S5PV210的 TxD0
+       
+       1、和S5PV210微处理器的哪个串口连接
+       2、使用交叉串口线还是直连串口线
+
+11111111111111111111111111111111111111111111111111111111111111111
+
+makefile
+目标：依赖
+	命令
+uart.bin:uart
+	arm-linux-objcopy -O binary uart uart.bin
+	cp uart.bin /tftpboot
+
+uart:main.o uart.o
+	arm-linux-ld -nostartfiles -nostdlib -Ttext=0x20008000 -e main main.o uart.o -o uart
+
+main.o:main.c
+	arm-linux-gcc -march=armv5te -nostdlib -c -o main.o main.c
+
+uart.o:uart.c
+	arm-linux-gcc -march=armv5te -nostdlib -c -o uart.o uart.c
+
+clean:
+	rm -vf *.o uart uart.bin  // -vf 显示具体的删除文件信息
+
+
+
+2222222222222222222222222222222222222222222222222
+
+
+uart.bin:
+	arm-linux-gcc -march=armv5te -nostdlib -c -o main.o main.c
+	arm-linux-gcc -march=armv5te -nostdlib -c -o uart.o uart.c
+	arm-linux-ld -nostartfiles -nostdlib -Ttext=0x20008000 -e main main.o uart.o -o uart
+	arm-linux-objcopy -O binary usart usart.bin
+	cp uart.bin /tftpboot
+
+
+33333333333333333333333333333333333
+make -f yy    //指定make yy文件
+
+
+
+444444444444444444444444444444444444444
+
+PROG=uart
+BIN=$(PROG).bin
+OBJS=main.o uart.o
+
+OBJCOPY=arm-linux-objcopy
+LD=arm-linux-ld
+CC=arm-linux-gcc
+CFLAG=-march=armv5te -nostdlib
+LDFLAG=-nostartfiles -nostdlib -Ttext=0x20008000 -e main
+
+	$(OBJCOPY)  //引用   替换arm-linux-objcopy
+
+	$(LD) 	//替换arm-linux-ld
+	$(CC)	//替换arm-linux-gcc
+
+
+%.o:%.c
+	$(CC) $(CFLAG) -c -o $@ $<    //$@ 指目标中的.o文件 
+				      //$< 将.c文件指向到前面
+
+////////////////////////////////////////////////////////////
+
+PROG=uart
+BIN=$(PROG).bin
+OBJS= main.o uart.o
+
+OBJCOPY=arm-linux-objcopy
+
+LD=arm-linux-ld
+
+CC=arm-linux-gcc
+
+CFLAG=-march=armv5te -nostdlib
+
+LDFLAG=-nostartfiles -nostdlib -Ttext=0x20008000 -e main 
+
+$(BIN): $(PROG)
+	$(OBJCOPY) -O binary $(PROG) $(BIN)
+	cp $(BIN) /tftpboot
+
+
+$(PROG):$(OBJS)
+	$(LD) $(LDFLAG) -o $(PROG) $(OBJS) 
+
+
+%.o:%.c
+	$(CC) $(CFLAG)  -c -o $@ $<
+
+clean:
+	rm -vf $(OBJS) $(PROG) $(BIN)
+      

@@ -1,0 +1,604 @@
+关键字：缺省参数  哑元  内联  动态内存分配 new/delete  引用
+
+一. 缺省参数
+1. 可以为函数的部分或全部参数指定缺省值，调用该函数时如果未提供相应的实参，则该参数取缺省值。
+
+2. 如果函数的某一个参数带有缺省值，那么该参数后面的所有参数必须都带有缺省值。
+
+3. 函数的缺省参数是在编译阶段解决的，因此只能用常量，常量表达式或者全局变量等非局部化数值作为其参数的缺省实参。/*不能用局部化的数值作为参数*/
+
+4. 如果需要将函数的声明和定义分开书写，那么该函数参数的/*缺省值只能出现在函数的声明部分*/，函数定义不能带有缺省参数。
+
+5. 尽量避免缺省参数和重载发生歧义。
+
+	#include<iostream>
+	using namespace std;
+
+	void foo(int i,double d=3.14,string s="字符串")
+	{
+		cout << i <<'.'<< d << '.'<< s <<endl;
+	}
+	
+	int g=100;
+	void hum(int i=g) {}
+
+	//void (int i, int j=i) {}  //错误i是局部变量
+
+	//声明
+	//void fun(int i=100);
+	void fun(int=100);
+	
+	/*
+	int add(int x,int y,int z=0)
+	{
+		return x+y+z;	
+	}
+	int add(int x,int y)		缺省参数和重载发生歧义
+	{
+		return x+y;
+	}
+	*/
+
+	int main(void)
+	{
+		foo(100,2.34,"你好");
+		foo(100,2.34);//foo(100,2.34,"字符串");
+		foo(100);//foo(100,3.14,"字符串");
+		fun();
+		//cout << add(123,456) << endl;  // 缺省参数和重载发生歧义
+		return 0;
+	}
+	
+	//定义
+	void fun(int i/*=100*/)
+	{
+		cout << i << endl;	
+	}
+
+	结果：
+	100.2.34.你好
+	100.2.34.字符串
+	100.3.14.字符串
+	100
+
+
+二. 哑元
+1. 只有类型没有名字的函数形参，叫做哑元。
+
+2. 哑元主要用于向下兼容和构成重载。
+
+
+	#include<iostream>
+	using namespace std;
+
+	void foo(char const*)	//只有类型没有名字的形参
+	{
+		cout << "兼容" << endl;   // 向下兼容
+	}
+
+	void bar(void)
+	{
+		cout << 1 <<endl;
+	}
+	void bar(int)			
+	{
+		cout << 2 << endl;
+	}
+	int main()
+	{
+		foo("./etc/foo.cfg");	//无论实参是什么，到函数里都无视 但必须写实参 不能为foo();
+		bar();	
+		bar(1);		//构成重载
+		return 0;
+	}
+
+	结果：
+	兼容
+	1
+	2
+
+三. 内联
+1. 内联就是用函数已被编译好的/*二进制代码*/，替换对该函数的调用指令。
+
+2. 内联在保证函数特性的同时，避免了函数调用的开销。
+
+3. 内联通过牺牲代码空间，赢得运行时间。
+
+4. 内联除了作为编译器默认的优化策略以外，也可以人为指定；
+	1. 在结构体和类中直接给出函数的定义,默认为内联
+	   struct Dog{
+		...
+		void who(void){...}  //隐式内联
+		...
+	   };
+
+	2. 通过inline关键字显式指定内联
+	   inline void foo(void) {...}	//显式内联
+	   struct Dog{
+		...
+		inline void who (void);//显式内联
+		...
+	   };
+	   void Dog::who(void) {...};
+
+
+	   无论隐式还是显式，所谓的“人为指定” 内联并非强制，而是一种对编译器内联机制建议或者说是一种期望，最终是否真的会被内联，还是要有编译器的优化策略决定。 而所谓编译器的优化策略简单讲就是对于频繁调用的简单函数进行内联，而对于稀少调用的复杂函数拒绝内联。另外，还有一些函数不能被内联，
+比如 递归函数 和 带有动态绑定特性的函数（即只有到运行时才能确定入口地址的函数）。
+
+	自递归:
+	inline void digui(void){ //编译器拒绝内联
+		...
+		digui();
+	};
+		
+	交叉递归：
+	void foo(void){
+		bar();
+	}
+	void bar(void){
+		foo();
+	}
+
+	循环递归：
+	void foo(void){
+		bar();
+	}
+	void bar(void){
+		hum();
+	}
+	void hum(void){
+		foo();
+	}
+
+
+
+四. 动态内存分配
+1. 完全兼容C方式的动态内存分配
+	#include<stdlib.h>  		//#include<cstdlib>
+	malloc/calloc/realloc/free
+
+2. 独立的内存分配操作符
+	new/delete      分配/销毁单个对象
+	new[]/delete[]  分配/销毁对象数组
+	操作符都是编译器提供的，不需要标准库，也不需要头文件。
+
+3. 用malloc/calloc/realloc分配的内存通过free释放，用new分配的内存通过delete释放，用new[]分配的内存通过delete[]释放。/*不要混合使用分配和释放*/。
+
+4. 避免重释放。
+	free(p);
+	free(p);  //吐核 \    		吐核：系统认定进程有危险 就会杀死 并返回杀死的原因
+	delete p;        >double free
+	delete p; //吐核 /
+		 
+	把 p=NULL;  可以避免这样重释放引发的吐核
+
+
+
+	#include<iostream>
+	#include<cstdlib>
+	using namespace std;
+
+	int main(void)
+	{
+		//C方式动态内存分配和释放
+		int *p=(int*)malloc(sizeof(int));
+		*p=1234;
+		cout<< *p <<endl;
+		free(p);
+
+		//C++方式动态内存分配和释放
+		//C++方式动态对象创建和销毁
+		int *q=new int(5678);
+		cout << *q <<endl;
+		delete q;
+
+		int *r=new int[5];//c++98
+		//int *r=new int[5]={100,200,300,400,500};  //GCC<4.8:-std=c++0x 编译时加选项
+							    //Gcc>4.8:-std=c++11
+
+		//int x;    //后缀法  前类型后变量
+		//int x[5]; //中缀法  两边类型中间变量
+
+		r[0]=100;
+		r[1]=200;
+		r[2]=r[0]+r[1];
+		r[3]=400;
+		r[4]=500;
+		for(size_t i=0;i<5; i++)
+			cout << r[i]<< " ";
+		cout << endl;
+		delete[] r;  //重点方括号
+
+	      //int (*pa)[4]=new int[3][4];    先右后左 由近及远 括号优先   //数组指针
+		int (*pa)[4]=new int[3][4]
+		{
+		 {11,12,13,14},
+		 {21,22,23,24},
+		 {31,32,33,34}
+		};
+		/*for(int i=0;i<3;i++)
+			for(int j=0;j<4;j++)
+				pa[i][j]=(i+1)*10+j+1;*/
+		for(int i=0;i<3;i++){
+			for(int j=0;j<4;j++)
+				cout << pa[i][j]<< " ";
+			cout << endl;
+		};
+		delete[] pa;
+		if (! (p = (int*)malloc (0xFFFFFFFF)))
+			perror ("malloc");
+		else {
+			// ...
+			free (p);
+		}
+		try {
+			p = new int[0xFFFFFFFF];
+			// ...
+			delete[] p;
+		}
+		catch (exception& ex) {
+			perror ("new"); // 打印错误信息
+			cout << ex.what () << endl;
+			// 清理进程资源
+			// ...
+			exit (EXIT_FAILURE); // 体面地自杀
+		return 0;
+	}
+
+	结果：
+	1234
+	5678
+	100 200 300 400 500 
+	11 12 13 14 
+	21 22 23 24 
+	31 32 33 34
+	malloc: Cannot allocate memory
+	new：Cannot allocate memory
+
+
+先右后左 由近及远 括号优先
+
+
+5. 与malloc/calloc/realloc函数通过返回空指针报告内存分配失败不同，
+   new 以抛出bad_alloc异常的方式向调用者通知错误。
+
+
+	if (! (p = (int*)malloc (0xFFFFFFFF)))
+		perror ("malloc");
+	else {
+		// ...
+		free (p);
+	}
+	try {
+		p = new int[0xFFFFFFFF];
+		// ...
+		delete[] p;
+	}
+	catch (exception& ex) {
+		perror ("new"); // 打印错误信息
+		cout << ex.what () << endl;
+		// 清理进程资源
+		// ...
+		exit (EXIT_FAILURE); // 体面地自杀
+
+
+6. new 和 malloc/calloc/realloc的不同之处在于除了分配堆内存以外，还会调用相应类型的构造函数，delete和free的不同之处在于除了释放所分配的堆内存以外，还会调用相应类型的析构函数。
+
+	new = malloc+调用构造函数
+	delete = 调用析构函数+free
+
+
+
+五. 引用（reference）  //相当于改变内存里存的数据
+1. 概念：引用即别名。
+	int a =10；
+	int& b =a; //b是a的引用（别名）
+	
+	a.引用必须初始化
+	  int a;
+	  int& b;//错误
+
+	b.引用不能为空
+	  int *p=NULL； //什么都不指向的指针 空指针
+	  int& b=NULL;  //错误  引用必须有所指 有所引
+
+	c.引用的目标不能更换
+	  int a,b;
+	  int *p=&a; //p的目标是a
+	  p=&b;	//p的目标是b
+
+	  int a, b;
+	  int& r = a; // r的目标是a
+	  r = b; // 将b的值赋给a   引用之后r就代表a
+
+
+
+		#include<iostream>
+		using namespace std;
+
+		int main(void)
+		{
+			int a=10;
+			int& b=a;
+			++b;
+			cout<< a <<endl; //11
+			cout<< &b << ' ' << &a << endl;
+
+			int& c =b;
+			cout << c << ' ' << &c <<endl; 
+
+			//int& d; //引用必须初始化
+			//int& d=NULL  //引用不能为空
+
+			int d=9;
+			b=d;  //等价于a=d,而不是使b成为d的引用，引用的目标不能更换
+			cout << &b << " " << &d <<endl;
+			cout << a << ' '<< b<<' '<< d<<endl;
+			return 0;
+	
+		}
+
+
+
+2. 应用
+ 	1. 引用型参数
+		通过将函数的形参声明为对实参的引用，使函数得以修改实参变量的值，提供比指针传递更加简洁安全的数据输出方式。
+
+
+
+	#include<iostream>
+	using namespace std;
+
+	void swap1(int x,int y)  	//无法交换
+	{
+		int z=x;
+		x=y;
+		y=z;
+	}
+
+	void swap2(int *x,int *y) 	//利用指针实现交换
+	{
+		int z=*x;
+		*x=*y;
+		*y=z;
+	}
+
+	void swap3(int& x,int& y)	//利用引用实现交换
+	{
+		int z=x;
+		x=y;
+		y=z;
+	}
+
+
+	int main()
+	{
+		int a=100, b=200;
+		cout << a << ' '<< b<< endl;	//100 200
+		swap1(a,b);			
+		cout << a << ' '<< b<< endl;	//100 200
+		swap2(&a,&b);
+		cout << a << ' '<< b<< endl;	//200 100
+		swap3(a,b);
+		cout << a << ' '<< b<< endl;	//100 200
+
+		return 0;
+	}
+
+
+
+	2. 常引用型参数	 int const& cr
+
+	   A.通过将函数的形参声明为对实参的常引用，一方面避免了参数传递过程中的内存复制开销，另一方面有效降低了在函数内部意外修改实参的风险。
+
+	   B.常引用型参数还可以用于接收右值形式的实参。
+
+	     可以放在赋值运算符左侧的就叫左值，只能放在赋值运算符右侧的就叫右值。其值可被修改的即左值，不可修改的即右值。
+
+
+	int a; // a是左值
+	int const a; // a是右值
+	cout << 10 << endl; // 10是右值
+	int a = 1, b = 2;
+	cout << a + b << endl; // a+b是右值
+	int a = 10;
+	double b = (double)a; // (double)a是右值
+
+
+常引用亦称万能引用，既可以引用左值，也可以引用右值，但普通引用只能引用左值，不能引用右值。
+
+
+	#include<iostream>
+	using namespace std;
+
+	struct Student{
+		char name[1024];
+		int age;
+		char info[4096];
+	};
+
+	void print(Student const& s)	//常引用
+	{
+		cout << "姓名："<< s.name<<endl;
+		//cout << "年龄："<< s.age++<<endl;  //有效降低了在函数内部意外修改实参的风险。
+		cout << "年龄："<< s.age<<endl;
+		cout << "简历："<<s.info<<endl;
+	}
+
+	void show(int const& cr)     	//常引用
+	{
+		cout << cr <<endl;
+	}
+
+	void disp(int& r)		//普通引用
+	{
+		cout<< r<<endl;
+	}
+	int main(void)
+	{
+		Student s={"zhaer",20,"在读"};
+		print(s);
+		show(10);
+		//disp(10);错误： 用类型为‘int’的右值初始化类型为‘int&’的非常量引用无效
+
+		int a=1,b=2;
+		show(a+b);
+		//disp(a+b);
+
+		double c=3.45;
+		show(c);  //3
+		//disp(c);错误： 将类型为‘int&’的引用初始化为类型为‘double’的表达式无效 临时变量是右值
+		return 0;
+	}
+
+	3. 返回引用
+		foo () = 100;
+		永远不要返回引用局部变量的引用，除非有特殊需要。
+
+	#include<iostream>
+	using namespace std;
+
+	int x=0;
+	int& foo(void)
+	{
+		return x;
+	}
+
+	int& bar(void)
+	{
+		int a=1000;
+		return a;
+	}
+
+	int& hum(void)
+	{
+		int b=2000;
+		return b;
+	}
+	int main()
+	{
+		foo()=100;
+		++foo();
+		foo()++;
+		cout<<x<<endl; //102
+		int& r=bar();	// 语句执行完 就代表r相当于局部变量的a
+		cout<< r<< endl; //1000  警告： 返回了对局部变量的‘a’的引用
+		hum();
+		cout << r<<endl; //2000  警告： 返回了对局部变量的‘b’的引用
+		return 0;
+	}
+
+
+
+作业：仿照swap2和swap3函数，编写swap4和swap5函数 分别用于交换两个字符串变量
+
+	#include<iostream>
+	using namespace std;
+
+	void swap1(int x,int y)
+	{
+		int z=x;
+		x=y;
+		y=z;
+	}
+
+	void swap2(int *x,int *y)
+	{
+		int z=*x;
+		*x=*y;
+		*y=z;
+	}
+
+	void swap3(int& x,int& y)
+	{
+		int z=x;
+		x=y;
+		y=z;
+	}
+
+	void swap4(char const**p,char const**q)
+	{
+		char const*i=*p;
+		*p=*q;
+		*q=i;
+	}
+
+	void swap5(const char* & p,const char* & q)
+	{
+		char const *e=p;
+		p=q;
+		q=e;
+	}
+	int main()
+	{
+		int a=100, b=200;
+		cout << a << ' '<< b<< endl;
+		swap1(a,b);
+		cout << a << ' '<< b<< endl;
+		swap2(&a,&b);
+		cout << a << ' '<< b<< endl;
+		swap3(a,b);
+		cout << a << ' '<< b<< endl;
+
+		char const*c="hello",*d="world";
+		swap4(&c,&d);
+		cout << c << ' '<< d << endl;
+		swap5(c,d);
+		cout << c << ' '<< d << endl;
+		return 0;
+	}
+
+结果：	100 200
+	100 200
+	200 100
+	100 200
+	world hello
+	hello world
+
+
+
+
+3. 引用与指针		/*引用不是实体  指针是实体*/
+
+	1. 相同性：引用的本质就是指针。
+
+	2. 异同性：引用和指针在高级语言层面的语法特性不同。
+		a. 指针可以定义而不初始化，但是引用必须在定义的同时初始化
+			int *p; //OK
+
+			int& r; //ERROR
+		
+		b. 指针存在空指针，但是引用没有空引用
+			int *p=NULL; //OK
+
+			int& r=NULL; //ERROR
+
+		c. 可以定义指向指针的指针,但是无法定义引用引用的引用
+			int *p;
+			int** pp=&p; //OK
+
+			int a;
+			int& r=a;
+			int&& rr=r; //ERROR
+
+		d. 可以定义引用指针的引用，但是无法定义指向引用的指针
+			char *p;
+			char* & rp=p; //OK
+
+			int a;
+			int& r=a;
+			int& *pr=&r; //ERROR
+
+		e. 可以定义指针数组，无法定义引用数组，但是可以定义数组引用
+			int a,b,c;
+			int *ps[]={&a,&b,&c}; //OK  指针数组
+			
+			int& rs[]={a,b,c}; //ERROR 不能把数组中每个元素都看作引用
+
+			int arr[3]={...};
+			int (&rarr)[3]=arr; //OK 数组引用
+			int (*parr)[3]=&arr; //OK 数组指针
+
+
+
+

@@ -1,0 +1,507 @@
+关键字：I/O流类库  
+
+十. I/O流
+1. I/O流类库
+	1. 文件I/O
+	   #include<fstream>
+	   ifstream - 读文件
+	   ofstream - 写文件
+	   fstream  - 读写文件
+
+	2. 内存I/O
+	   #include<sstream>
+	   istrstream - 读内存
+	   ostrstream - 写内存
+	   strstream  - 读写内存
+
+2. I/O流的打开和关闭
+	1. 直接利用I/O流类的构造函数打开I/O流
+	
+	I/O流类名 I/O流类对象（路径，模式）;
+	fstream fs("/some.txt",ios::in|ios::out);
+
+
+	2. 调用I/O流类所提供open成员函数打开I/O流
+	
+	I/O流类对象.open（路径，模式）;
+	fstream fs;
+	fs.open("/some.txt",ios::in|ios::out);
+
+
+	3. 调用I/O流类所提供close成员函数关闭I/O流
+
+	I/O流类对象.close();
+	fs.close();
+
+
+	4. 直接利用I/O流类的析构函数关闭I/O流
+	
+	{
+		fstream fs("/some.txt",ios::in|ios::out);
+		//....		
+	}	-> fstream::~fstream() -> 关闭fs对应的I/O流
+
+
+	其中模式：
+	ios::in	 //C：fopen(...,"r")
+	打开文件用于读取，不存在则失败，已存在不清空	//以程序的角度来看  in就是读取（从外向里）
+	适用于ifstream(缺省)/fstream			//                 out就是写入（从里向外）
+
+	ios::out  //C：fopen(..."w")
+	打开文件用于写入，不存在则创建，已存在则清空
+	适用于ofstream(缺省)/fstream
+
+	ios::app  //C：fopen(...,"a")
+	打开文件用于追加，不存在则创建，已存在不清空（写在文件尾，读并不一定在文件尾）
+	适用于ofstream(缺省)/fstream
+
+	ios::trunc
+	打开文件时会清空原内容
+	适用于ofstream/fstream
+
+	ios::ate
+	打开时定位到文件尾（读写都在文件尾，和app追加有区别）
+	适用于ifstream/ofstream/fstream
+
+	ios::binary  //C:fopen(...,"b")
+	以二进制方式读写
+	适用于ifstream/ofstream/fstream
+
+	打开模式可以组合使用：ios::in|ios::out - 既读又写
+	无意义组合结果是未定义的：ios::in|ios::trunc - 清空了怎么读？
+	合理的组合结构有定义：ios::in|ios::trunc|ios::out - 清空原内容，写入新内容，再读新写入的内容
+
+
+3. I/O流的状态
+	每个I/O流对象内部都有一个表示状态的成员变量，这个成员变量通常就是一个 unsigned int，其中每个二进制位表示一种状态。
+
+	常用状态：good，好，状态位全零，表示流对象正常可用。流对象->bool = true
+
+	bad，坏，文件系统发生致命错误       \
+	eof，文件尾，文件位置到达文件末尾    > 流对象 -> bool = false
+	fail，失败，最后一次I/O出错         /
+
+	ios::clear() - 复位流状态，使流对象继续工作
+
+
+open.cpp
+
+#include<iostream>
+#include<fstream>
+using namespace std;
+
+int main(){
+	ofstream ofs("open.txt");   //没有此文件会自动创建
+	if(!ofs){
+		cout<<"无法打开文件！"<<endl;
+		return -1;
+	}	
+	ofs<<123<<" "<<4.56<<" "<<"apple"<<endl;
+	ofs.close();
+	ofs.open("open.txt",ios::app);
+	if(!ofs){
+		cout<<"无法打开文件！"<<endl;
+		return -1;
+	}
+	ofs<<"append_line"<<endl;
+	ofs.close();
+	ifstream ifs("open.txt");
+	if(!ifs){
+		cout<<"无法打开文件！"<<endl;
+		return -1;
+	}
+	int i;
+	double d;
+	string s1,s2;
+	ifs>>i>>d>>s1>>s2;
+	cout<<i<<endl;
+	cout<<d<<endl;
+	cout<<s1<<endl;
+	cout<<s2<<endl;
+
+	return 0;
+}
+
+结果：	123
+	4.56
+	apple
+	append_line
+
+
+4. I/O流的格式化
+	1. 流函数：在ios总基类里定义的一组与输入输出格式控制有关的成员函数，调用这些函数会对以后的输入输出格式造成不同的影响。
+
+	A. 控制浮点数的精度
+	int ios::precision(int);//设置精度，设置新值返回旧值
+	int ios::precision(void) const;//获取，返回当前值
+
+	对于浮点小数而言，精度是指有效数字的位数。
+	123.4567000 - 精度10
+
+	对于科学计数法表示的定点小数，精度是指小数部分的位数。
+	1.234567000E2 - 精度9
+
+	B. 控制域宽
+	int ios::width(int);
+	int ios::width(void) const;
+
+	C. 填充字符
+	char ios::fill(char);
+	char ios::fill(void) const;
+
+	D. 格式标志
+	long ios::setf(long);//添加标志位，返回原标志
+	long ios::setf(long,long);//先清除互斥域，再添加标志位，返回原标志（第一个参数标志位，第二个参数互斥域）
+	long ios::unsetf(long);//清除标志位，返回原标志
+
+	标志位		互斥域			说明
+----------------------------------------------------------------------------------
+	ios::left				左对齐
+	ios::right	ios::adjustfield	右对齐
+	ios::internal				两端对齐，符号靠左，数字靠右
+-----------------------------------------------------------------------------------
+	ios::dec				十进制
+	ios::oct	ios::basefield		八进制
+	ios::hex				十六进制
+------------------------------------------------------------------------------------
+	ios::fixed	ios::floatfield		普通定点小数
+	ios::scientific				科学计数法
+------------------------------------------------------------------------------------
+	ios::showpos				显示正号
+	ios::showbase				显示进制前缀0/0x
+	ios::showpoint				显示小数点和尾数0
+	ios::uppercase				数字中字母大写
+	ios::boolalpha				把字符串显示布尔值
+	ios::unitbuf				每次插入刷流缓冲
+	ios::skipws				以空白字符作为分隔符
+
+
+format1.cpp
+
+#include <cmath>
+#include <iostream>
+using namespace std;
+int main (void) {
+	cout << cout.precision () << endl;	//6
+	cout << sqrt (200) << endl;		//14.1421
+
+	cout.precision (10);			
+	cout << sqrt (200) << endl;		//14.14213562
+
+	cout << '[';
+	cout.width (10);
+	cout << 123 << ']' << endl;		//[       123]
+
+	cout << '[';
+	cout.width (10);
+	cout.fill ('*');
+	cout << 123 << ']' << endl;		//[*******123]
+
+	cout << '[';
+	cout.width (10);
+	cout.fill (' ');
+	cout.setf (ios::left, ios::adjustfield);//[123       ]
+	cout << 123 << ']' << endl;
+
+	cout << '[';
+	cout.width (10);
+	cout.setf (ios::showpos);
+	cout << 123 << ']' << endl;		//[+123      ]
+
+	cout << '[';
+	cout.width (10);
+	cout.setf (ios::internal,
+		ios::adjustfield);
+	cout << 123 << ']' << endl;		//[+      123]
+
+	cout.unsetf (ios::showpos);
+	cout.setf (ios::oct, ios::basefield);
+	cout.setf (ios::showbase);
+	cout << 123 << endl;			//0173
+	
+	cout.setf (ios::hex, ios::basefield);
+	cout.setf (ios::uppercase);
+	cout << 123 << endl;			//0X7B
+
+	cout.setf (ios::dec, ios::basefield);
+	cout << 123 << endl;			//123
+
+	cout.setf (ios::scientific,
+		ios::floatfield);
+	cout.unsetf (ios::uppercase);
+	cout << sqrt (200) << endl;		//1.4142135624e+01
+
+	cout.setf (ios::fixed, ios::floatfield);
+	cout << 2.0 << endl;			//2.0000000000
+
+	cout << true << ' ' << false << endl;	//1 0
+
+	cout.setf (ios::boolalpha);
+	cout << true << ' ' << false << endl;	//true false
+	return 0;
+}
+
+
+
+
+
+	2. 流控制符：直接插入到流对象中，控制输入输出的格式，其作用与流函数相当。如果使用的流控制带有参数，需要包含头文件：
+		#include<iomanip>
+		left/right/internal
+		dec/oct/hex
+		fixed/scientific
+		showpos/noshowpos
+		showbase/noshowbase
+		showpoint/noshowpoint
+		uppercase/nouppercase
+		boolalpha/noboolalpha
+		unitbuf/nounitbuf
+		skipws/noskipws
+		ends(空字符)/endl(换行)/flush(刷流)
+		setprecision(int)//设置精度
+		setw(int)//设置域宽
+		setfill(char)//设置填充字符
+
+
+format2.cpp
+
+#include <cstdio>
+#include <cmath>
+#include <iostream>
+#include <iomanip> // 带参数的流控制符
+using namespace std;
+ostream& red (ostream& os) {
+	return os << "\033[;;31m"; // \033[;;31m  红
+}
+ostream& green (ostream& os) {
+	return os << "\033[;;32m"; // \033[;;32m  绿
+}
+ostream& def (ostream& os) {
+	return os << "\033[0m";	   // \033[0m	  还原色彩
+}
+int main (void) {
+	cout << cout.precision () << endl;		//6
+	cout << sqrt (200) << endl;			//14.1421
+
+	cout << setprecision (10) << sqrt (200)		//14.14213562
+		<< endl;
+
+	cout << '[' << setw (10) << 123 << ']'		//[       123]
+		<< endl;
+
+	cout << '[' << setw (10) << setfill ('*')	//[*******123]
+		<< 123 << ']' << endl;
+
+	cout << '[' << setw (10) << setfill (' ')	//[123       ]
+		<< left << 123 << ']' << endl;
+
+	cout << '[' << setw (10) << showpos		//[+123      ]
+		<< 123 << ']' << endl;
+
+	cout << '[' << setw (10) << internal		//[+      123]
+		<< 123 << ']' << endl;
+
+	cout << noshowpos << oct << showbase		//0173
+		<< 123 << endl;
+
+	cout << hex << uppercase << 123 << endl;	//0X7B
+
+	cout << dec << 123 << endl;			//123
+
+	cout << scientific << nouppercase		//1.4142135624e+01
+		<< sqrt (200) << endl;
+
+	cout << fixed << 2.0 << endl;			//2.0000000000
+
+	cout << true << ' ' << false << endl;		//1 0
+
+	cout << boolalpha << true << ' '		//true false
+		<< false << endl;
+
+	cout << "我是" << red << "帅帅" << def		
+		<< "的" << green << "就是帅" << def	//会改变颜色
+		<< endl;
+	printf ("我是\033[;;33m帅帅\033[0m的"
+		"\033[;;34m就是帅\033[0m\n");
+	return 0;
+}
+
+
+
+5. 二进制I/O
+
+istream& istream::read(char* buf,size_t num);
+
+	从输入流中读取num个字节到buf缓冲区中。返回是输入流对象本身。可以通过istream::gcount()函数最后一次读取到的字节数。
+	如果实际读取的字节数和num参数相等，输入流状态就是good，否则就是bad/eof。
+
+
+ostream& ostream::write(char const* buf,size_t num);
+
+	从buf缓冲区中向输出流写入num个字节。写入成功输出流状态为good，否则为bad/fail。
+
+
+binary.cpp
+
+#include <cstring>
+#include <iostream>
+#include <fstream>
+using namespace std;
+class Student {
+public:
+	Student (char const* name = "",
+		int age = 0) :
+		/*m_name (name), */m_age (age) {
+		strcpy (m_name, name);
+	}
+	friend ostream& operator<< (ostream& os,
+		Student const& student) {
+		return os << student.m_name << ','
+			<< student.m_age;
+	}
+private:
+	char m_name[256];
+//	string m_name;		//不能用字符串类型向文件里写数据，这样做向文件里写入的其实是字符串指针，而不是字符串指针所指向的内容，这跟数组里存数据，有着本质的区别
+	int m_age;
+};
+int main (void) {
+	Student s1 ("张飞", 22);
+	ofstream ofs ("student.txt");
+	ofs.write ((char*)&s1, sizeof (s1));
+	ofs.close ();
+	ifstream ifs ("student.txt");
+	Student s2;
+	ifs.read ((char*)&s2, sizeof (s2));
+	cout << s2 << endl;
+	return 0;
+}
+
+结果：	张飞，22
+
+
+
+6. 随机I/O
+istream& istream::seekg(int offset,int origin);
+ostream& istream::seekp(int offset,int origin);
+
+origin:
+	ios::beg - 从文件头（SEEK_SET）
+	ios::cur - 从当前位置（SEEK_CUR）
+	ios::end - 从文件尾（SEEK_END）
+
+
+int istream::tellg(void);	//获取读位置
+int istream::tellp(void);	//获取写位置
+
+
+
+seek.cpp
+
+#include <iostream>
+#include <fstream>
+using namespace std;
+int main (void) {
+	fstream fs ("seek.txt",		//有ios::in需要提前创建好文件
+		ios::in | ios::out);
+	fs << "0123456789";
+	fs.seekp (-7, ios::cur);
+	fs << "ABCD";
+//	fs.seekg (0, ios::beg);
+	fs.seekg (ios::beg);
+	int i;
+	fs >> i;
+	cout << i << endl; // 12	//0 就忽略了
+	fs.seekg (-3, ios::end);
+	fs >> i;
+	cout << i << endl; // 789
+	return 0;
+}
+
+
+
+7. 字符串流
+istringstream/ostringstream
+
+string.cpp
+
+#include <cstdio>
+#include <iostream>
+#include <sstream>
+using namespace std;
+int main (void) {
+	/*
+	char str[1024];
+	sprintf (str, "%d %g %s", 123, 4.56,    //C
+		"string");
+	cout << str << endl;
+	*/
+	ostringstream oss;
+	oss << 123 << ' ' << 4.56 << ' '
+		<< "string";		//123 4.56 string
+	string str = oss.str ();
+	cout << str << endl;
+	int i;
+	double d;
+	char s[256];
+	/*
+	sscanf (str, "%d%lf%s", &i, &d, s);	//C
+	*/
+	istringstream iss;
+	iss.str (str);
+	iss >> i >> d >> s;
+	cout << i << endl;		//123
+	cout << d << endl;		//4.56
+	cout << s << endl;		//string
+	return 0;
+}
+
+
+
+
+
+
+
+
+//作业：实现一个基于异或
+
+diff homework.cpp ming.cpp	//比较这个两个文件的差别
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

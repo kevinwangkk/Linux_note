@@ -1,0 +1,349 @@
+关键字：语法顺序 执行顺序
+
+/*2.5 表连接*/
+	s_dept:部门信息表
+		desc s_dept;
+
+SQL> desc s_dept;
+ Name					   Null?    Type
+ ----------------------------------------- -------- ----------------------------
+ ID		部门编号		   NOT NULL NUMBER(7)
+ NAME		部门名称		   NOT NULL VARCHAR2(25)
+ REGION_ID	地区编号		            NUMBER(7)
+
+
+	s_region:地区信息表
+		desc s_region;
+
+SQL> desc s_region;
+ Name					   Null?    Type
+ ----------------------------------------- -------- ----------------------------
+ ID		地区编号		   NOT NULL NUMBER(7)
+ NAME		地区名称		   NOT NULL VARCHAR2(50)
+	
+SQL> select * from s_region;
+
+	ID NAME
+---------- --------------------------------------------------
+	 3 Africa / Middle East
+	 4 Asia
+	 5 Europe
+	 1 North America
+	 2 South America
+
+
+1.查看员工的信息 编号 名字 所在部门的名称
+	编号 名字 在s_emp
+	部门名称 在s_dept
+	select s_emp.id,s_emp.first_name,s_dept.name
+		from s_emp,s_dept
+			where s_emp.dept_id=s_dept.id;
+where 关联条件
+
+笛卡尔积：（没有关联条件 变成笛卡尔积）   两表行数的乘积得到的结果
+	select s_emp.id,s_emp.first_name,s_dept.name
+		from s_emp,s_dept
+
+表连接，表名.字段名表示，当字段名在查询使用的多个表中只出现一次，可以省略表名
+	select s_emp.id,first_name,name
+		from s_emp,s_dept
+			where dept_id=s_dept.id;
+
+可以为表起别名  一旦命名别名，原表名失效
+	select s_emp.id,first_name,name
+		from s_emp e,s_dept d
+			where dept_id=d.id;
+
+	select e.id,e.first_name,d.name
+		from s_emp e,s_dept d
+			where e.dept_id=d.id;
+
+
+oracle中表连接的写法
+2. 表连接的分类
+	1. 内连接
+		关联条件成立时，得到的结果集
+		a. 等值内连接
+			关联条件用 = 
+
+			查看每个部门及所在地区的信息 显示部门编号 部门名称 地区名称
+				select d.id,d.name,r.name
+					from s_dept d,s_region r
+						where d.region_id=r.id;
+
+		b. 非等值连接
+			drop table salgrade;   			--删除salgrade表
+			create table salgrade(			--创建salgrade表	
+				grade number primary key,   	--级别
+				losal number(11,2) not null,	--最低工资
+				hisal number(11,2) not null	--最高工资
+			);
+			insert into salgrade values(1,700,1200);	--向salgrade表插入数据
+			insert into salgrade values(2,1201,1400);
+			insert into salgrade values(3,1401,2000);
+			insert into salgrade values(4,2001,5000);
+			insert into salgrade values(5,5001,10000);
+			commit；					--提交数据
+
+			查看每一个员工的名字，工资以及工资的级别
+			名字，工资：s_emp
+			级别：salgrade
+			s_emp:salary
+			salgrade:losal hisal	
+				select e.first_name,e.salary,g.grade
+					from s_emp e,salgrade g
+						where e.salary >= g.losal and e.salary <= hisal;
+
+		c. 自连接
+			在逻辑上，把一张表看成多张表使用
+
+			
+				select id,first_name,manager_id from s_emp;
+			列出所有领导的first_name
+				select distinct m.first_name
+					from s_emp e,s_emp m
+						where e.manager_id=m.id;
+
+	2. 外连接
+		外连接的结果集 = 内连接的结果集 + 匹配不上的记录
+		(+):oracle特有的语法 表示(+)对面表的数据全部出现在结果集中
+		
+		a. 自连接
+			查看普通员工的信息
+				select distinct m.first_name
+					from s_emp e,s_emp m
+						where e.manager_id(+)=m.id   --除去e.manager里的数据，剩下m.id的数据全部显示在结果集里
+							and e.manager_id is null;
+	
+		b. 等值连接
+			查看所有员工以及部门信息 包括没有部门的员工
+				select e.id,e.first_name,d.name
+					from s_emp e,s_dept d
+						where e.dept_id=d.id(+); --d对面表e全显示 不管有没有部门都显示
+						(+)只能出现在关联条件的一侧	
+		c. 非等值连接
+			查看全部员工的工资级别
+				select first_name,salary,grade
+					from s_emp e,salgrade g
+						where e.salary >= g.losal(+) and e.salary<=g.hisal(+);
+
+
+3. sql标准中表连接的语法
+内连接：
+	from 表1 [inner] join 表2 on 连接条件
+
+select s_dept.name,s_region.name
+	from s_dept inner join s_region
+		on s_dept.region_id=s_region.id;
+
+外连接：
+	左外连接：from 表1 left [outer] join 表2 on 连接条件
+		=> 内连接的结果集 + 左表匹配不上的数据
+	右外连接：from 表1 right [outer] join 表2 on 连接条件
+		=> 内连接的结果集 + 右表匹配不上的数据
+	全外连接：from 表1 full [outer] join 表2 on 连接条件
+		=> 左外连接的结果集 + 右外连接的结果集 - 重复数据
+
+4. 合并结果集
+	union 和 union All 的区别之一在于对重复结果的处理
+
+	union 排重
+	union all 不排重
+
+		select *
+		from student
+		where id < 4
+
+		union
+
+		select *
+		from student
+		where id > 2 and id < 6
+
+		结果将是
+
+		1    Aaron    78
+		2    Bill     76
+		3    Cindy    89
+		4    Damon    90
+		5    Ella     73
+
+		如果换成Union All连接两个结果集，则返回结果是：
+
+		1    Aaron    78
+		2    Bill     76
+		3    Cindy    89
+		3    Cindy    89
+		4    Damon    90
+		5    Ella     73
+	
+
+
+
+/*2.6 组函数和分组*/
+1. 组函数	
+/*所有组函数对null值的处理：忽略  参数可以用distinct修饰*/
+	count：统计一组数据的个数 参数可以是任意类型 可以使用*
+	max：统计一组数据的最大值 参数可以是任意类型
+	min：统计一组数据的最小值 参数可以是任意类型
+	sum：统计一组数据的和     参数只能是数字类型
+	avg：统计一组数据的平均值 参数只能是数字类型
+
+	select count(salary) from s_emp
+		where salary>1500;
+	
+	统计有提成的员工的数量
+	select count(commission_pct) from s_emp; 	对null值的处理：忽略
+	
+	统计表中的数据行数
+	select count(*) from s_emp;			
+
+	
+	select count(salary),max(salary),min(salary) from s_emp;
+
+	select count(salary),sum(salary),avg(salary) from s_emp
+		where demp_id=42;
+
+
+2. 分组
+	按照一定的标准，把数据分成若干个组
+	group by 分组标准
+	where 之后 order by 之前
+
+	按照部门编号 统计每个部门的人数
+	select dept_id,count(id) from s_emp
+		where 1=1
+			group by dept_id;
+
+	按照部门进行分组，统计每个部门的平均工资
+	select dept_id,avg(salary) from s_emp
+		group by dept_id;
+
+	按照部门进行分组，统计平均工资大于1500的部门
+	- 语法正确，逻辑错误
+	select dept_id,avg(salary) from s_emp
+		where salary>1500				
+			group by dept_id;
+	
+
+	having 子句:分组后筛选符合条件的组
+	位置：group by 之后
+	select dept_id,avg(salary) from s_emp
+		group by dept_id
+			having avg(salary)>1500;
+
+
+	练习：按照部门分组，统计每个部门的人数  
+        要显示人数大于等于2 的部门编号(名称)、人数
+	select dept_id,count(id) /*分组语句中 字段要么是分组标准，要么是组函数的参数*/
+		from s_emp  
+			group by dept_id
+				having count(id)>=2;
+	
+
+	select e.dept_id,d.name,count(e.id)  /*分组语句中 字段要么是分组标准，要么是组函数的参数*/
+		from s_emp e,s_dept d
+			where e.dept_id=d.id
+				group by dept_id,d.name
+					having count(e.id)>=2;
+
+/*分组语句中 字段要么是分组标准，要么是组函数的参数*/
+
+语法顺序：
+	select
+	 from
+	  where 	--从源数据中筛选符合条件的数据
+	   group by	--将where筛选后的数据 根据分组标准进行分组
+            having	--分组后 筛选出符合条件的组
+	     order by
+
+执行顺序：用别名判断
+	select e.dept_id,d.name,count(e.id)  
+		from s_emp e,s_dept d
+			where e.dept_id=d.id
+				group by dept_id,d.name
+					having count(e.id)>=2
+						order by count(e.id) asc;
+
+
+	from
+	 where
+	  group by
+	   having
+	    select
+	     order by
+
+/*2.7 子查询*/
+	子查询就是一个查询语句嵌入到另一条sql语句中的子句中，
+	先执行嵌套的查询语句，结果集作为外面的sql语句的条件或者一部分
+
+1. where 之后
+	1.单行子查询
+		子查询的结果集是单值时，可以使用 =
+
+	查看职位和 ‘Ben’相同的员工的信息
+	a.查出'Ben'的职位
+		select title from s_emp where first_name='Ben';		
+		--结果：Warehouse Manager
+	b.查询职位是‘Warehouse Manager’的员工信息
+		select id,first_name,title from s_emp
+			where title='Warehouse Manager';
+	c.把上面的两条语句合并
+		select id,first_name,title from s_emp
+			where title=(select title from s_emp where first_name='Ben');
+	
+
+	2.多行子查询
+		子查询的结果是多行时，必须使用多行的操作符，比如in
+
+	列出所有的领导的信息
+	a.列出所有的领导编号
+		select distinct manager_id from s_emp;
+		--结果：1，2，3，4，5，6，7，8，9，10，null
+	b.根据领导编号列出领导的first_name,salary
+		select id,first_name,salary from s_emp
+			where id in(1,2,3,4,5,6,7,8,9,10,null);
+	c.合并
+		select id,first_name,salary from s_emp
+			where id in(select distinct manager_id from s_emp);
+
+	查看所有的普通员工的信息
+		select id,first_name,salary from s_emp
+			where id not in(select distinct id from s_emp where manager_id is not null);
+
+
+
+2. having 之后
+	分组后筛选符合条件的组
+
+	按照部门分组，求每个部门的平均工资，显示平均工资比编号42的部门的平均工资高的部门的信息
+	a.编号为42的部门的平均工资
+		select avg(salary) from s_emp where dept_id=42;
+		--结果： 1081.66667
+	b.根据求出的平均工资进行筛选
+		select dept_id,avg(salary) from s_emp 
+			group by dept_id
+				having avg(salary)>1081.66667;
+	c.合并
+		select dept_id,avg(salary) from s_emp 
+			group by dept_id
+				having avg(salary)>(select avg(salary) from s_emp where dept_id=42);
+
+
+3. from 之后
+	任何一个合法的select语句，都会在内存中构建一张表称为内存表
+	
+      select * from
+	(select d.name d_name,r.name r_name
+		from s_dept d,s_region r
+			where d.region_id=r.id);
+
+      select d_name from
+	(select d.name d_name,r.name r_name
+		from s_dept d,s_region r
+			where d.region_id=r.id);
+
+
+
+
+

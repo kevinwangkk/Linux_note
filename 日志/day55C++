@@ -1,0 +1,725 @@
+关键字：钻石继承  虚继承  虚函数  多态  覆盖  纯虚函数  纯抽象类  
+
+一. 钻石继承
+1. 派生一个子类的多个基类源于共同的祖先，这样的继承结构被称为钻石继承（菱形继承）。
+
+	A	- 公共基类（总基类）
+       / \
+      B   C	- 中间基类/中间子类（中间类）
+       \ /
+	D	- 终端子类/汇聚子类（混合类）
+
+	  电子系统
+      /      |	    \
+   电话    播放器   计算机
+      \      |      /
+          智能手机
+
+
+	问题：当通过汇聚子类沿着不同继承路径访问公共基类中成员，会出现数据不一致的问题。其原因就是在不同的中间子类存在多个独立的公共基类子对象。
+
+
+
+2. 虚继承
+	在继承方式中增加 virtual 关键字，这样得到的子类就是其基类的虚子类，所有中间子类中的公共基类子对象将只有一个实例，且同时为这些虚子类所共享。即使沿着不同的继承路径访问公共基类子对象中数据，也不可能不一致。
+
+
+#include <iostream>
+using namespace std;
+//   A
+//  / \
+// B   C
+//  \ /
+//   D
+class A {
+public:
+	A (int data) : m_data (data) {cout<<"A构造："<<this<<endl;}
+protected:
+	int m_data;
+};
+class B : virtual public A {  				//virtual
+public:
+	B (int data) : A (data) { cout<<"B构造："<<this<<endl;}
+	void set (int data) {
+		m_data = data;
+	}
+};
+class C : virtual public A {				//virtual
+public:
+	C (int data) : A (data) {cout<<"C构造："<<this<<endl;}
+	int get (void) const {
+		return m_data;
+	}
+};
+class D : public B, public C {
+public:						//*************************************************/
+	D (int data) : B (data), C (data),A(data)/*必须在D里给A赋值 不能依赖B和C 他们是虚子类 不好使了*/ {cout<<"D构造："<<this<<endl;}			//*************************************************/
+};
+int main (void) {
+	D d (100);
+	cout << d.get () << endl; // 100
+	d.set (200);
+	cout << d.get () << endl; // 100? 200?
+	return 0;
+}
+
+结果：	A构造：0xbfb9a9ac	//只有一个A 
+	B构造：0xbfb9a9a4	
+	C构造：0xbfb9a9a8
+	D构造：0xbfb9a9a4
+	100
+	200
+
+
+
+	1. 虚继承解决钻石继承结构中的数据不一致问题。
+	2. 阻断继承-----禁止一个类被继承。（虚继承实现）
+
+final.cpp
+
+#include <iostream>
+using namespace std;
+class A {
+private:
+	A (int x = 0) : m_x (x) {} 	//基类构造函数私有
+public:
+	int m_x;
+	friend class AA;
+};
+class AA : virtual public A {
+public:
+	AA (int x = 0) : A (x) {}
+};
+/*
+class B : public A {
+public:
+	B (int x, int y) : A (x), m_y (y) {}
+	int m_y;
+};
+*/
+class B : public AA {
+public:
+	B (int x, int y,/*int z*/) : AA (x), m_y (y),/*A(z)*/ {}   //使用虚继承 在B里必须给A赋值 因为私有赋值不了 也就继承不了 形成阻断继承
+	int m_y;
+};
+int main (void) {
+//	A a (123);
+	AA a (123);
+	cout << a.m_x << endl;
+	return 0;
+}
+
+
+
+
+二. 虚函数和多态
+            图形：位置、绘制
+               /     \
+矩形：长宽、绘制      圆形：半径、绘制
+
+shape.cpp
+
+#include <iostream>
+using namespace std;
+// 抽象类
+class Shape {
+public:
+	Shape (int x, int y) : m_x (x), m_y (y){}
+	
+	// 虚函数
+	virtual void draw (void) const {
+		cout << "图形(" << m_x << ','
+			<< m_y << ')' << endl;
+	}
+	
+protected:
+	int m_x, m_y;
+};
+class Rect : public Shape {
+public:
+	Rect (int x, int y, int w, int h) :
+		Shape (x, y), m_w (w), m_h (h) {}
+	// 虚函数，覆盖了基类中的draw函数
+	void draw (void) const {
+		cout << "矩形(" << m_x << ',' << m_y
+			<< ',' << m_w << ',' << m_h
+			<< ')' << endl;
+	}
+private:
+	int m_w, m_h;
+};
+class Circle : public Shape {
+public:
+	Circle (int x, int y, int r) :
+		Shape (x, y), m_r (r) {}
+	// 虚函数，覆盖了基类中的draw函数
+	void draw (void) const {
+		cout << "圆形(" << m_x << ',' << m_y
+			<< ',' << m_r << ')' << endl;
+	}
+private:
+	int m_r;
+};
+void render (Shape* shapes[]) {
+	for (size_t i = 0; shapes[i]; ++i)
+		shapes[i]->draw ();
+		// 不是根据指针本身的类型选择函数，
+		// 而是根据指针所指向的具体子类对象
+		// 的类型选择所要调用的函数————多态
+}
+int main (void) {
+	Circle circle (1, 2, 3);
+	circle.draw ();
+	Rect rect (4, 5, 6, 7);
+	rect.draw ();
+	Shape* shapes[1024] = {NULL};
+	shapes[0] = new Circle (1, 2, 3);
+	shapes[1] = new Circle (4, 5, 6);
+	shapes[2] = new Rect (7, 8, 9, 10);
+	shapes[3] = new Rect (11, 12, 13, 14);
+	shapes[4] = new Circle (15, 16, 17);
+	render (shapes);
+//	Shape shape (0, 0);
+	return 0;
+}
+
+结果：	圆形(1,2,3)
+	矩形(4,5,6,7)
+	圆形(1,2,3)
+	圆形(4,5,6)
+	矩形(7,8,9,10)
+	矩形(11,12,13,14)
+	圆形(15,16,17)
+
+
+
+1. 虚函数
+形如
+class 类名 {
+	virtual 返回类型 函数名（形参表）[const] {...}
+};
+的成员函数，称为虚函数或方法。
+
+
+2. 覆盖
+	如果子类的成员函数和基类中的虚函数具有相同的函数原型，那么该成员函数就也是虚函数，无论其是否带有 virtual 关键字，且对基类中的虚函数构成覆盖关系。
+
+
+3. 多态
+	如果子类提供了对基类虚函数的有效覆盖，那么通过一个指向子类对象的基类指针，或者引用子类对象的基类引用，调用该虚函数，实际被调用的是子类中的覆盖版本，而非基类中的原始版本，这种语法现象称为多态。
+
+
+4. 多态的意义
+	多态的重要意义在于，一般情况下，调用哪个类的成员函数是由调用者指针或引用本身的类型决定的，而当多态发生时，调用哪个类的成员函数则完全由调用者指针或引用的实际目标对象的类型决定。这样一来，源自同一种类型的同一种激励，竟然可以产生多种不同的响应，谓之多态。
+
+
+
+
+高内聚 低耦合
+
+calc.cpp
+
+#include <iostream>
+using namespace std;
+class Calculator {
+public:
+	virtual int calc (int x, int y) const {}    //通过这个接口就可以实现 + 和 - 高内聚 低耦合  
+};
+class Adder : public Calculator {
+public:
+	int calc (int x, int y) const {
+		return x + y;
+	}
+};
+class Suber : public Calculator {
+public:
+	int calc (int x, int y) const {
+		return x - y;
+	}
+};
+int calc (int x, int y,
+	Calculator const& obj) {
+	return obj.calc (x, y);		//这个技巧 很好 obj.calc(x,y)
+}
+int main (void) {
+	Adder adder;
+	Suber suber;
+	cout << calc (123, 456, adder) << endl;
+	cout << calc (123, 456, suber) << endl;
+	return 0;
+}
+
+
+
+三. 覆盖的条件
+1. 必须是（非静态）成员函数。
+2. 必须是虚函数。
+3. 函数的签名（函数名+形参表+常属性）必须相同。
+4. 一般而言返回类型也应该相同，但是只有一个例外：类型协变。（基类版本返回基类指针，子类版本返回子类指针）
+	如果基类中的虚函数返回的是一个类的指针或引用，那么其子类中的覆盖版本允许返回基类版本所返回的指针或引用的目标类型的子类的指针或引用，这就叫做返回类型协变。
+
+
+注意：基类的原始版本和子类的覆盖版本，他们的访问控制属性不一定非得一样。
+
+
+
+override.cpp
+
+#include <iostream>
+using namespace std;
+//virtual void foo (void) {}    		//不满足是成员函数
+class A {
+public:
+//	virtual static void foo (void) {}	//不满足是非静态的成员函数
+	virtual void foo (void) {
+		cout << "A::foo" << endl;
+	}
+};
+class B {
+public:
+	virtual void foo (void) {}
+};
+class C : public A {
+public:
+	virtual void foo (int x) {}
+};
+class D : public A {
+public:
+//	virtual int foo (void) { return 0; }
+	void foo (void) {
+		cout << "D::foo" << endl;
+	}
+};
+class M {};
+class N : public M {};
+
+class X {
+public:
+	virtual M* foo (void) {
+		cout << "X::foo" << endl;
+		return NULL;
+	}
+};
+class Y : public X {
+public:
+	N* foo (void) {
+		cout << "Y::foo" << endl;
+		return NULL;
+	}
+};
+////如果基类中的虚函数返回的是一个类的指针或引用，那么其子类中的覆盖版本允许返回基类版本所返回的指针或引用的目标类型的子类的指针或引用，这就叫做返回类型协变。
+class P {
+public:
+	virtual void foo (void) {
+		cout << "P::foo" << endl;
+	}
+};
+class Q : public P {
+private:
+	void foo (void) {
+		cout << "Q::foo" << endl;
+	}
+};
+int main (void) {
+	D d;
+	A& a = d;
+	a.foo ();	//D::foo
+	X* x = new Y;
+	x->foo ();	//Y::foo
+
+//如果基类中的虚函数返回的是一个类的指针或引用，那么其子类中的覆盖版本允许返回基类版本所返回的指针或引用的目标类型的子类的指针或引用，这就叫做返回类型协变。
+
+	Q q;
+//	q.foo ();	// 错误： ‘virtual void Q::foo()’是私有的
+	P& p = q;
+	p.foo ();	//Q::foo
+	return 0;
+}
+
+
+四. 多态的条件
+1. 多态特性除了需要在基类中声明虚函数以外，还必须借助指针或者引用调用该虚函数，才能表现出来。
+
+2. 调用虚函数的指针也可能是成员函数中的this指针，/*只要它是一个指向子类对象的基类指针*/，同样可以多态。
+
+3. 当基类的构造函数被子类的构造函数调用时，子类对象尚不能说是子类类型的，它只表现出基类类型的外观和行为。这时调用虚函数，没有多态性。（构造顺序是先构造基类再构造子类）
+
+4. 当基类的析构函数被子类的析构函数调用时，子类对象已不再是子类类型的了，它只表现出基类类型的外观和行为。这时调用虚函数，没有多态性。（析构顺序是先析构子类再析构基类）
+
+
+poly.cpp
+
+#include <iostream>
+using namespace std;
+class A {
+public:
+	/*
+	A (void) {
+		this->foo ();		//输出的是A中的foo 构造顺序是先构造基类再构造子类
+	}
+	~A (void) {
+		this->foo ();		//输出的是A中的foo 析构顺序是先析构子类再析构基类
+	}
+	*/
+	virtual void foo (void) const {
+		cout << "A::foo" << endl;
+	}
+	void bar (void) const {
+		/*this->*/foo ();	//调用虚函数的指针也可能是成员函数中的this指针，只要它是一个指向子类对象的基类指针
+	}
+};
+class B : public A {
+public:
+	void foo (void) const {
+		cout << "B::foo" << endl;
+	}
+};
+int main (void) {
+	B b;
+	
+	A a = b; // 对象截切
+	a.foo ();		//A::foo 必须借助指针或者引用调用该虚函数
+	A* p = &b;	
+	p->foo ();		//B::foo
+	A& r = b;
+	r.foo ();		//B::foo
+	b.bar (); // A::foo? B::foo?	B::foo
+	
+	return 0;
+}
+
+结果：	A::foo
+	B::foo
+	B::foo
+	B::foo
+
+
+
+五. 纯虚函数，抽象类，纯抽象类
+
+
+shape.cpp 
+
+#include <iostream>
+using namespace std;
+// 抽象类
+class Shape {
+public:
+	Shape (int x, int y) : m_x (x), m_y (y){}
+	/*
+	// 虚函数
+	virtual void draw (void) const {
+		cout << "图形(" << m_x << ','
+			<< m_y << ')' << endl;
+	}
+	*/
+	// 纯虚函数
+	virtual void draw (void) const = 0;
+protected:
+	int m_x, m_y;
+};
+class Rect : public Shape {
+public:
+	Rect (int x, int y, int w, int h) :
+		Shape (x, y), m_w (w), m_h (h) {}
+	// 虚函数，覆盖了基类中的draw函数
+	void draw (void) const {
+		cout << "矩形(" << m_x << ',' << m_y
+			<< ',' << m_w << ',' << m_h
+			<< ')' << endl;
+	}
+private:
+	int m_w, m_h;
+};
+class Circle : public Shape {
+public:
+	Circle (int x, int y, int r) :
+		Shape (x, y), m_r (r) {}
+	// 虚函数，覆盖了基类中的draw函数
+	void draw (void) const {
+		cout << "圆形(" << m_x << ',' << m_y
+			<< ',' << m_r << ')' << endl;
+	}
+private:
+	int m_r;
+};
+void render (Shape* shapes[]) {
+	for (size_t i = 0; shapes[i]; ++i)
+		shapes[i]->draw ();
+		// 不是根据指针本身的类型选择函数，
+		// 而是根据指针所指向的具体子类对象
+		// 的类型选择所要调用的函数————多态
+}
+int main (void) {
+	Circle circle (1, 2, 3);
+	circle.draw ();
+	Rect rect (4, 5, 6, 7);
+	rect.draw ();
+	Shape* shapes[1024] = {NULL};
+	shapes[0] = new Circle (1, 2, 3);
+	shapes[1] = new Circle (4, 5, 6);
+	shapes[2] = new Rect (7, 8, 9, 10);
+	shapes[3] = new Rect (11, 12, 13, 14);
+	shapes[4] = new Circle (15, 16, 17);
+	render (shapes);
+//	Shape shape (0, 0);
+	return 0;
+}
+
+
+
+1. 纯虚函数
+形如
+class 类名{
+	virtual 返回类型 函数名（形参表）[const] = 0；
+};
+的虚函数，称为纯虚函数或抽象方法。
+
+2. 抽象类
+	至少包含一个纯虚函数的类称为抽象类。抽象类不能被实例化为对象。如果抽象类的子类不对基类中所有的纯虚函数都提供有效覆盖，那么它就会继承未被覆盖的纯虚函数，进而也成为抽象类。
+
+3. 纯抽象类
+	如果一个类除了构造函数和静态成员函数以外，所有的成员函数都是纯虚函数，那么这样的类就是纯抽象类。
+	纯抽象类亦称接口类，旨在定义功能性接口，但是不需要提供接口的具体实现，具体实现由子类给出。
+
+zoo.cpp
+
+#include <iostream>
+using namespace std;
+class Animal {
+public:
+	virtual void eat (void) const = 0;
+	virtual void run (void) const = 0;	//纯抽象类  就是提供一个功能接口
+	virtual void cry (void) const = 0;
+};
+class Cat : public Animal {
+public:
+	void eat (void) const {
+		cout << "猫吃鱼" << endl;
+	}
+	void run (void) const {
+		cout << "猫追逐" << endl;
+	}
+	void cry (void) const {
+		cout << "猫喵喵" << endl;
+	}
+};
+class Rabbit : public Animal {
+public:
+	void eat (void) const {
+		cout << "兔子吃萝卜" << endl;
+	}
+	void run (void) const {
+		cout << "兔子蹦跶" << endl;
+	}
+	void cry (void) const {
+		cout << "兔子吱吱" << endl;
+	}
+};
+void zoo (Animal const* animal) {
+	animal->eat ();
+	animal->run ();
+	animal->cry ();
+}
+int main (void) {
+	zoo (new Cat);
+	zoo (new Rabbit);
+	return 0;
+}
+
+
+
+
+
+
+
+
+reader.cpp
+
+#include <iostream>
+using namespace std;
+class PDFReader {
+public:
+	void read (string const& fileName) const{	//通过基类调用子类 高内聚低耦合 模块化 复用更高
+		cout << "打开" << fileName << endl;
+		cout << "读取到一行文本..." << endl;
+		drawText ();
+		cout << "读取到一个图形..." << endl;
+		drawShape ();
+		cout << "读取到一张图片..." << endl;
+		drawImage ();
+		// ...
+		cout << "关闭" << fileName << endl;
+	}
+private:
+	virtual void drawText (void) const = 0;
+	virtual void drawShape (void) const = 0;
+	virtual void drawImage (void) const = 0;
+	// ...
+};
+class PDFRender : public PDFReader {
+	void drawText (void) const {
+		cout << "绘制文字..." << endl;
+	}
+	void drawShape (void) const {
+		cout << "绘制图形..." << endl;
+	}
+	void drawImage (void) const {
+		cout << "绘制图片..." << endl;
+	}
+	// ...
+};
+int main (void) {
+	PDFRender render;
+	render.read ("/stdc++.pdf");
+	return 0;
+}
+
+
+
+六. 虚函数调用的工作原理
+
+1. 虚函数表
+
+	包含虚函数的类
+
+class B {
+    virtual int f1 (void);
+    virtual void f2 (int);
+    virtual int f3 (int);
+};
+
+	编译器会为每个包含虚函数的类生成一张虚函数表，即存放每个虚函数地址的函数指针数组，简称虚表(vtbl)，每个虚函数对应一个虚函数表中的下标
+
+	0 -> B::f1
+	1 -> B::f2
+	2 -> B::f3
+
+	除了为包含虚函数的类生成虚函数表以外，编译器还会为该类增加一个隐式成员变量，通常在该类实例化对象的/*起始位置，用于存放虚函数表的首地址，该变量被称为虚函数指针*/，简称虚指针(vptr)
+
+	代码
+	B* pb = new B;
+	pb->f3 (12);
+	被编译为
+	pb->vptr[2] (pb, 12); // B::f3
+
+	虚表是一个类一张，而不是一个对象一张，同一个类的多个对象，通过各自的虚指针，共享同一张虚表
+
+	继承自B的子类
+	class D : public B {
+	    int f1 (void);
+	    int f3 (int);
+	    virtual void f4 (void);
+	};
+
+	子类覆盖了基类的f1和f3，继承了基类的f2，增加了自己的f4，编译器同样会为子类生成一张专属于它的虚表
+
+	0 -> D::f1
+	1 -> B::f2
+	2 -> D::f3
+	3 -> D::f4
+
+	指向子类虚表的虚指针就存放在子类对象的基类子对象中，通常在起始位置
+
+	代码
+	B* pb = new D;
+	pb->f3 (12);
+	被编译为
+	pb->vptr[2] (pb, 12); // D::f3
+	这就是多态的工作原理。
+
+
+//练习：设计一个实验验证基于虚函数表的多态
+vptr.cpp
+
+#include <iostream>
+using namespace std;
+class A {
+public:
+	A (void) : m_ch ('A') {}
+	virtual void foo (void) {
+		cout << m_ch << "::foo()" << endl;
+	}
+	virtual void bar (void) {
+		cout << m_ch << "::bar()" << endl;
+	}
+private:
+	char m_ch;
+};
+class B : public A {
+public:
+	B (void) : m_ch ('B') {}
+	void foo (void) {
+		cout << m_ch << "::foo()" << endl;
+	}
+private:
+	char m_ch;
+};
+int main (void) {
+	cout << "&A::foo = " << (void*)&A::foo
+		<< endl;
+	cout << "&A::bar = " << (void*)&A::bar
+		<< endl;
+	A a;
+	void (**vptr_a) (A*) =
+		*(void (***) (A*))&a;
+	cout << "A::vtbl[0] = "
+		<< (void*)vptr_a[0] << endl;
+	cout << "A::vtbl[1] = "
+		<< (void*)vptr_a[1] << endl;
+	vptr_a[0] (&a);				//A::foo()
+	vptr_a[1] (&a);				//A::bar()
+	cout << "----------------------" << endl;
+	cout << "&B::foo = " << (void*)&B::foo
+		<< endl;
+	cout << "&B::bar = " << (void*)&B::bar
+		<< endl;
+	B b;
+	void (**vptr_b) (B*) =
+		*(void (***) (B*))&b;
+	cout << "B::vtbl[0] = "
+		<< (void*)vptr_b[0] << endl;
+	cout << "B::vtbl[1] = "
+		<< (void*)vptr_b[1] << endl;
+	vptr_b[0] (&b);				//B::foo()
+	vptr_b[1] (&b);				//A::bar()
+	return 0;
+}
+
+结果：	&A::foo = 0x8048a1a
+	&A::bar = 0x8048a5c
+	A::vtbl[0] = 0x8048a1a
+	A::vtbl[1] = 0x8048a5c
+	A::foo()
+	A::bar()
+	----------------------
+	&B::foo = 0x8048ac2
+	&B::bar = 0x8048a5c
+	B::vtbl[0] = 0x8048ac2
+	B::vtbl[1] = 0x8048a5c
+	B::foo()
+	A::bar()
+
+
+
+2. 动态绑定
+
+	当编译器“看到”通过指针或者引用调用基类中的虚函数时，并不急于生成有关函数调用的指令，相反它会用一段代码替代该调用语句，这段代码在运行时被执行，完成如下操作：
+	1. 根据调用指针或引用的目标对象找到其内部的虚表指针；
+	2. 根据虚表指针找到其所指向的虚函数表；
+	3. 根据虚函数名和函数指针在虚函数表中的下标，找到所调用虚函数的入口地址；
+	4. 在完成函数调用的准备工作以后，直接跳转到虚函数入口地址处顺序执行函数体指令序列，直到从函数中返回。
+
+
+3. 动态绑定对性能的影响
+	1. 虚函数表和虚指针的存在势必要增加内存空间的开销。
+	2. 和普通函数调用相比，虚函数调用要多出一个步骤，增加了运行时间的开销。
+	3. 动态绑定会妨碍编译器通过内联优化代码，虚函数不能内联。
+	鉴于以上三点，只有在确实需要多态特性的场合下才会使用虚函数，否则还是尽量使用普通函数。
+
+
+
+
+
+
+

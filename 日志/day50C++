@@ -1,0 +1,716 @@
+关键字：显式类型转换  类和对象  构造函数
+
+一. 显式类型转换 （4种强制类型转换）
+
+1. 静态类型转换
+	目标类型对象 static_cast<目标类型> (源类型对象)
+
+	SRC srcl;
+	DST dst = static_cast<DST> (src);
+	源类型和目标类型必须相容(相似)。
+
+	如果从A类型到B类型可以做隐式转换，则说明A和B类型足够相容(相似)，因此从B类型到A类型就可以做静态转换。
+	
+	静态类型转换主要用于类数据类型对象的向下造型。
+
+	人   - 基类
+	男人 - 子类
+	人 human;
+	男人 man;
+	human = man;  //向上造型，隐式转换   man到human 变大范围
+	man = human;  //向下造型，转换风险   human到man 变小范围
+
+	man = static_cast<男人> (human); //向下造型，转换风险
+
+	运行阶段的就是动态
+	编译阶段的就是静态
+
+
+
+2. 动态类型转换
+	目标类型对象的指针/引用 = 
+		dynamic_cast<目标类型指针/引用> (源类型对象的指针/引用)
+
+	DST dst;
+	SRC& rsrc = dst;
+	DST& rdst = dynamic_cast<DST&> (rsrc);
+	
+	SRC* psrc = &dst;
+	DST* pdst = dynamic_cast<DST*> (psrc);
+
+	在运行阶段检查rsrc/psrc的实际目标对象到底是不是期望转换得到的DST类型对象，如果是则转换成功，否则通过返回空指针或者抛出异常表示转换失败。主要用于具有多态特性的父子类之间转换。
+
+	
+	运行阶段的就是动态
+	编译阶段的就是静态
+
+
+	
+3. 去常类型转换
+	某种类型对象的指针/引用 = 
+		const_cast<某种类型指针/引用> (某种类型对象的常指针/常引用)
+
+	TYPE var;
+	TYPE const& cr = var;
+	cr = ...; //ERROR
+	TYPE& r = const_cast<TYPE&> (cr);
+	r = ...; //OK
+
+	TYPE const* cp=&var;
+	*cp = ...;//ERROR
+	TYPE *p = const_cast<TYPE*> (cp);
+	*p = ...;//OK
+	
+
+
+
+#include<iostream>
+using namespace std;
+
+int main(void)
+{
+	int const& r=100;
+	cout << &r << ' ' << r << endl;
+	//r=200;
+	const_cast<int&> (r) = 200;
+	cout << &r << ' ' << r << endl;
+
+	int const volatile a=300;  //不加volatile 会被编译器优化 即使赋值了400也会被优化 变成300
+	int *p=const_cast<int*> (&a);
+	*p=400;
+	cout << p << ' ' << *p <<endl;
+	cout << &a << ' ' << a << endl; //不加void*  则&a会变成布尔值输出因为用了volatile修饰
+
+	return 0;
+}
+
+结果：
+0xbfef6670 100
+0xbfef6670 200
+0xbfef6674 400
+1 400 			//地址为空  则布尔值是0
+
+
+
+#include<iostream>
+using namespace std;
+
+int main(void)
+{
+	int const& r=100;
+	cout << &r << ' ' << r << endl;
+	//r=200;
+	const_cast<int&> (r) = 200;
+	cout << &r << ' ' << r << endl;
+
+	int const volatile a=300;  //不加volatile 会被编译器优化 即使赋值了400也会被优化 变成300
+	int *p=const_cast<int*> (&a);
+	*p=400;
+	cout << p << ' ' << *p <<endl;
+	cout << (void*)&a << ' ' << a << endl; //不加void*  则&a会变成布尔值输出因为用了volatile修饰
+
+	return 0;
+}
+
+结果：
+0xbf941a90 100
+0xbf941a90 200
+0xbf941a94 400
+0xbf941a94 400
+
+
+
+
+
+
+
+4. 重解类型转换
+	另一种类型对象的指针/引用 = 
+		reinterpret_cast<另一种类型指针/引用> (另一种类型对象的常指针/常引用)
+	
+	用不同的方式操作同一块数据。
+
+
+
+  1 #include<iostream>
+  2 #include<cstdio>
+  3 using namespace std;
+  4 
+  5 int main(void)
+  6 {
+  7     float f =1.2;
+  8     printf("%g %d\n",f,f);
+  9     unsigned char *p =
+ 10         reinterpret_cast<unsigned char*> (&f);
+ 11     printf("%#x %#x %#x %#x\n",p[0],p[1],p[2],p[3]);
+ 12     return 0;
+ 13 }
+
+结果：
+1.2 1073741824
+0x9a 0x99 0x99 0x3f
+
+
+
+
+二. 类和对象
+1. 什么是对象？
+	万物皆对象
+
+2. 如何描述对象？
+	1. 通过属性和行为描述对象
+
+	对象：狗
+	属性：犬种，犬龄，体重，毛色
+	行为：进食，睡眠，玩耍
+	---------------------------
+	对象：学生
+	属性：姓名，年龄，学号
+	行为：吃饭，睡觉，学习
+	---------------------------
+	对象：手机
+	属性：品牌，型号，价格
+	行为：接打电话，收发短信，上网，玩游戏
+
+	2. 拥有相同属性和行为的对象被分成一组，即一个类，因此可以说类就是对象的抽象表示。
+
+3. 类的表示
+	1. 自然语言：人人交互
+	2. 数据类型：人机交互
+		a.简单类型 - 只能表示一个属性，难以表示更加复杂的信息
+		b.数组类型 - 可以表示多个属性，但是类型过于单一
+		c.结构类型 - 可以表示多个属性，而且类型可以不同，但是对行为的描述有所欠缺
+		d.类数据类型 - 可以表示多个属性，而且类型可以不同，同时可以通过多个不同的成员函数描述不同的行为
+
+
+4. 现实与虚拟
+现实空间   -->	逻辑空间  -->	虚拟空间
+真实对象   -->	   类	  -->	逻辑对象
+
+例子：
+一条一岁大，半公斤重的棕色的吉娃娃，啃了一块骨头，睡了一个小时，愉快地去玩耍
+
+#include<iostream>
+using namespace std;
+
+struct Dog{
+	//成员变量描述属性
+	char breed[256];//犬种
+	int age;	//犬龄
+	float weight;	//体重
+	char color[256];//毛色
+	void eat(string const& food){
+		cout << "啃了" << food <<endl;
+	}
+
+	//成员函数描述行为
+	//睡眠
+	void sleep(int duration){
+		cout << "睡了" << duration << "小时" << endl;
+	}
+	//玩耍
+	void play(void){
+		cout << "愉快的玩耍" << endl;
+	}
+	//描述
+	void who(void){
+			cout<<"一条"<<age<<"岁大"<<weight<<"公斤重的"<<color<<"色"<<breed<<endl;
+	}
+};
+
+int main(void)
+{
+	Dog dog={"吉娃娃",1,0.5,"棕"};
+	dog.who();
+	dog.eat("骨头");
+	dog.sleep(1);
+	dog.play();
+	return 0;
+}
+
+结果：
+一条1岁大0.5公斤重的棕色吉娃娃
+啃了骨头
+睡了1小时
+愉快的玩耍
+
+
+
+四. 类的定义与实例化
+1. 类的一般形式
+	struct/class 类名 ：继承方式 基类，...{
+	访问控制限定符：
+		//构造函数---初始化
+		类名(形参表)：成员变量(初值),...{
+			函数体;
+		}
+
+		//析构函数---清理
+		~类名(void){
+			函数体;
+		}
+
+		//成员函数---行为
+		返回类型 函数名(形参表) 常属性 异常说明{
+			函数体;
+		}
+
+		//成员变量---属性
+		数据类型 变量名;
+
+	};
+
+
+访问控制限定符
+public - 公有，谁都可以访问		//公有和私有区别在于是否需要被外界知道   
+private - 私有，只有自己可以访问   	//属性一般不需要被外界知道 行为一般需要外界知道 
+protected - 保护，只有自己和自己的子类可以访问
+
+
+在C++中srtuct和class关键字唯一区别就是，缺省访问控制属性不同，/*struct缺省为公有*/，/*class缺省为私有。*/
+
+
+面向对象的三大基本特性：封装，继承，多态。
+封装：通过类把事物的属性和行为进行封装。通过访问控制限定符对属性和行为的可访问性进行区分。
+
+
+2. 构造函数
+	1. 函数名与类名相同，没有返回类型。
+	
+	class 类名{
+	public:
+		类名(构造形参表){
+			构造函数体；
+		}
+	};
+
+	构造函数在创建对象被系统自动调用。
+
+	构造函数在对象的整个生命周期中一定会被调用，且只被调用一次。
+	
+	构造函数通常负责设置对象的初始状态：为成员变量赋初值，分配资源，为对象的后续操作做准备工作，等等。
+
+
+		#include<iostream>
+		using namespace std;
+
+		class Student{
+		//private:
+			string m_name;
+			int m_age;
+		public:
+			//构造函数
+			Student(string const& name=" ",int age=0){
+				m_name=name;
+				m_age=age;
+			}
+			void setName(string const& name){
+				if(name!="SB")
+					m_name=name;
+			}
+			void setAge(int age){
+				if(age>0)
+					m_age=age;
+			}
+			void who(void){
+				cout << "我叫"<<m_name<<",今年"<<m_age<<"岁."<<endl;
+			}
+			void learn(string const& course){
+				cout << "我在学"<<course<<endl;
+			}
+		};
+
+		int main(void)
+		{
+			Student s1;
+			//Student s1(); //不能加括号 会被编译器误解为函数的声明
+			s1.setName("张飞");
+			s1.setAge(25);
+			s1.who();
+			s1.setName("SB");
+			s1.setAge(-1);
+			s1.who();
+			s1.learn("C++");
+
+			Student s2;
+			s2.who();	//我叫 ,今年0岁.
+
+			int i=10;//初始化表达式
+			//int i (10); 就相当于 int i=10;
+			cout<< i<<endl;//10
+			i=20;	//赋值运算表达式
+			cout<<i<<endl;
+
+			Student s3("赵云",22);
+			//s3.Student("赵云",22);
+			s3.who();
+
+			int *pi=new int(30);
+			cout<<*pi<<endl;
+			delete pi;
+
+			Student *ps=new Student("关羽",40);
+			//Student *ps=(Student*)malloc(sizeof(Student));
+			//ps->Student("关羽",40);
+			ps->who();
+			delete ps;
+
+			ps=new Student;
+			ps->who();
+			delete ps;
+
+			ps=new Student();  //有没有括号都可以
+			ps->who();
+			delete ps;
+
+			return 0;
+		}
+
+		结果：
+		我叫张飞,今年25岁.
+		我叫张飞,今年25岁.
+		我在学C++
+		我叫 ,今年0岁.
+		10
+		20
+		我叫赵云,今年22岁.
+		30
+		我叫关羽,今年40岁.
+		我叫 ,今年0岁.
+		我叫 ,今年0岁.
+
+
+
+
+	2. 构造函数可以重载
+	   构造函数可以通过参数表的区别，来差别化对象的初始化方式。
+
+	#include<iostream>
+	using namespace std;
+
+	class Point{
+	public:
+		Point(int x,int y,int z){
+			m_x=x;
+			m_y=y;
+			m_z=z;
+		}
+
+		Point(int x,int y){
+			m_x=x;
+			m_y=y;
+			m_z=0;
+		}
+
+		Point(int x){
+			m_x=x;
+			m_y=0;
+			m_z=0;
+		}
+
+		void draw(void){
+			cout<<"绘制点（"<<m_x<<','<<m_y<<','<<m_z<<')'<<endl;
+		}
+	private:
+		int m_x;
+		int m_y;
+		int m_z;
+
+	};
+
+	int main(void)
+	{
+		Point p1(100,200,300);
+		p1.draw();
+		Point p2(400,500);
+		p2.draw();
+		Point p3(600);
+		p3.draw();
+
+		return 0;	
+	}
+
+	结果：
+	绘制点（100,200,300)
+	绘制点（400,500,0)
+	绘制点（600,0,0)
+	
+
+	3. 典型构造函数
+		a.缺省构造函数：表示对象的缺省状态。（不带任何参数的构造函数）
+
+		  如果一个类/*没有显式的定义任何构造函数*/，编译器会自动为其提供一个缺省构造函数，该构造函数对于基本类型的成员变量不做任何初始化，对于类数据类型成员变量，用缺省方式初始化。
+
+
+		b.类型转换构造函数：可以通过/*单个*/不同类型的参数调用的构造函数，在任何涉及类型转换的语境下，被自动执行，完成目标类型对象的初始化。
+
+
+		c.拷贝构造函数：构造同类型对象的副本（克隆）对象。
+
+		  如果一个类/*没有显式定义拷贝构造函数*/，编译器会自动提供一个缺省拷贝构造函数，该函数会对所有成员变量按字节复制。多数情况下，缺省拷贝构造函数足够适用，无需自行定义，但个别情况下，缺省拷贝构造函数会不够完美，这时就有必要用自定义的拷贝构造函数取代之。
+
+
+#include<iostream>
+using namespace std;
+
+class Point{
+public:
+	Point(int x,int y,int z){
+		m_x=x;
+		m_y=y;
+		m_z=z;
+	}
+
+	Point(int x,int y){
+		m_x=x;
+		m_y=y;
+		m_z=0;
+	}
+	//类型转换构造函数
+	Point(int x){
+		m_x=x;
+		m_y=0;
+		m_z=0;
+	}
+	//缺省构造函数  
+	Point(void){
+		m_x=m_y=m_z=0;
+	}
+
+	//拷贝构造函数 可以不自己写 编译器会自己弄
+	Point(Point const& that){
+		m_x=that.m_x;
+		m_y=that.m_y;
+		m_z=that.m_z;
+	}
+	void draw(void){
+		cout<<"绘制点（"<<m_x<<','<<m_y<<','<<m_z<<')'<<endl;
+	}
+private:
+	int m_x;
+	int m_y;
+	int m_z;
+
+};
+
+class A{
+public:
+	int m_var;
+	Point m_pt;
+};
+
+void foo(Point point)
+{
+	point.draw();
+}
+
+Point bar(void)
+{
+	return 900;
+	//return Point(900);
+}
+int main(void)
+{
+	Point p1(100,200,300);
+	p1.draw();
+	Point p2(400,500);
+	p2.draw();
+	Point p3(600);
+	p3.draw();
+	
+	Point p4;
+	p4.draw();	//绘制点(0,0,0)  缺省构造函数
+
+	A a;				//没有显式的定义任何构造函数
+	cout<< a.m_var<<endl;//编译器就会为其提供一个缺省构造函数
+	a.m_pt.draw();	//绘制点(0,0,0)
+
+	p1=700;
+	//p1=(Point)700;
+	//p1=Point(700);
+	p1.draw();  	//绘制点(700,0,0)
+	
+	foo(800);		//绘制点(800,0,0) 类型转换
+	//foo(Point(800));
+	p1=bar();		
+	p1.draw();		//绘制点(900,0,0) 类型转换
+
+	Point p5 (p1);	 //拷贝构造
+	p5.draw();		//绘制点(900,0,0)
+	Point p6=p5;	//拷贝构造 等号是初始化符
+	p6.draw();		//绘制点(900,0,0) 
+
+	return 0;	
+}
+
+结果：
+	绘制点（100,200,300)
+	绘制点（400,500,0)
+	绘制点（600,0,0)
+	绘制点（0,0,0)
+	-1219718762
+	绘制点（0,0,0)
+	绘制点（700,0,0)
+	绘制点（800,0,0)
+	绘制点（900,0,0)
+	绘制点（900,0,0)
+	绘制点（900,0,0)
+
+		
+
+
+自己定义的构造函数		编译器提供的构造函数
+/*--------------------------------------------------*/
+     无				  缺省构造函数
+				  缺省拷贝构造函数
+/*--------------------------------------------------*/
+定义了除拷贝构造函数		  缺省拷贝构造函数
+以外的任何构造函数
+/*--------------------------------------------------*/
+定义了拷贝构造函数		  无
+/*--------------------------------------------------*/
+
+
+问题：什么情况下一个类只包含一个构造函数？
+	自己定义了拷贝构造函数
+
+
+所有编译器提供的构造函数都是公有函数。
+
+
+问题：如何禁止对象被复制？
+	把拷贝构造函数声明为私有的函数。
+
+
+
+
+作业：//定义一个时钟类，在控制台上显示一个
+//电子时钟，以秒为单位显示当前系统时间
+// $ 18:31:15
+
+#include<iostream>
+#include<iomanip>	//cout格式化输出
+#include<cstdio>
+#include<ctime>
+using namespace std;
+
+class Clock{
+public:
+	int h;
+	int m;
+	int s;
+	void time(){
+		cout<<setw(2)<<setfill('0')<< h << ':'   //cout格式化输出 不足两位前面补0
+		<<setw(2)<<setfill('0')<< m << ':' 
+		<<setw(2)<<setfill('0')<< s <<endl;
+	}
+	void time_jud(){
+		if(s==60)
+		{
+			s=0;
+			++m;
+		}
+		if(m==60)
+		{
+			m=0;
+			++h;
+		}
+		if(h==24)
+		{
+			h=0;
+		}
+	}
+
+};
+
+int main(void)
+{
+	Clock clock;
+/*
+	clock.h=18;
+	clock.m=59;
+	clock.s=50;
+*/
+	time_t t=time(0);
+	struct tm* local=localtime(&t);
+	clock.h=local->tm_hour;
+	clock.m=local->tm_min;
+	clock.s=local->tm_sec;
+	while(1)
+	{
+		clock.time();
+		sleep(1);
+		clock.s++;
+		clock.time_jud();
+
+	}
+	return 0;
+}
+
+
+//老师写的
+#include<iostream>
+#include<iomanip>
+#include<cstdio>
+#include<ctime>
+using namespace std;
+
+class Clock{
+private:
+	int m_hour;
+	int m_min;
+	int m_sec;
+	void show(void){
+		cout<<'\r'<<setw(2)<<setfill('0')<< m_hour << ':' 
+		<<setw(2)<<setfill('0')<< m_min << ':' 
+		<<setw(2)<<setfill('0')<< m_sec <<flush;
+	/*	
+		printf("\r%02d:%02d:%02d",m_hour,m_min,m_sec);
+		fflush(stdout);//刷新输出缓冲器 立即显示
+	*/
+	}
+	void tick(void){
+		sleep(1);
+		if(++m_sec==60){
+			m_sec=0;
+			if(++m_min==60){
+				m_min=0;
+				if(++m_hour==24)
+					m_hour=0;
+				}
+			}
+		}
+	
+public:
+	Clock(int hour,int min,int sec){
+		m_hour=hour;
+		m_min=min;
+		m_sec=sec;
+	}
+	Clock(void){ //缺省构造函数
+		time_t t=time(NULL);
+		tm* local=localtime(&t);
+		m_hour=local->tm_hour;
+		m_min=local->tm_min;
+		m_sec=local->tm_sec;
+	}
+	void run(void){
+		for(;;){
+			show();
+			tick();
+		}
+	}
+};
+
+int main(void)
+{
+	time_t t=time(NULL);
+	tm* local=localtime(&t);
+	Clock clock(local->tm_hour,local->tm_min,local->tm_sec);
+	clock.run();
+	/*
+	Clock clock;
+	clock.run();
+	*/
+	return 0;
+}

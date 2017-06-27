@@ -1,0 +1,506 @@
+关键字：
+	oracle_sql 4天
+	plsql：2天
+	proc/c++：2天
+
+/*数据库*/
+DB：数据库		Database
+DBMS：数据库管理系统	Database Management System
+DBA：数据库管理员	Database Administrator
+
+RDB：关系型数据库	Relational Database
+RDBMS：关系型数据库管理系统
+
+关系型数据库：基于二维表的数据库
+		表头 行 列 字段 字段值
+
+
+/*主流的关系型数据库产品*/
+商业型：
+oracle		oracle(甲骨文)	9i  10g  11g 版本
+sql server	微软		
+DB2		IBM
+
+开源免费
+mysql		oracle
+
+
+/*操作数据库语言*/
+sql：Structured Query Language,结构化查询语言
+
+1. select	数据查询语句（重点）
+
+	select 查询
+
+2. ddl：Data Definition Language，数据定义语句
+
+	create  drop  alter  创建 销毁 修改
+
+3. dml：data manipulation language，数据操作语句
+
+	insert  delete  update   插入  删除  增加
+
+4. tcl：transaction control language,事务控制语句
+
+	commit       提交
+	rollback     撤销
+	savepoint    保存点
+
+5. dcl：Data control language，数据控制语句
+
+	grant  revoke  授权  撤权
+
+
+/*远程登录服务器*/
+
+1. telnet ip		telnet 172.16.1.90
+   login：oracle
+   password:oracle
+
+2. sqlplus	操作数据库的命令行工具		简写：sqlplus openlab/open123
+   user-name:openlab
+   password:open123
+
+   SQL>  	出现则显示登录成功
+
+
+/*查看表结构*/
+	SQL>desc 表名； - 查看表结构  			desc（description）
+		 s_emp：员工信息表
+
+SQL> desc s_emp;
+ Name					   Null?    Type
+ ----------------------------------------- -------- ----------------------------
+ ID		工号			   NOT NULL NUMBER(7)
+ LAST_NAME	姓			   NOT NULL VARCHAR2(25)
+ FIRST_NAME	名				    VARCHAR2(25)
+ USERID 					    VARCHAR2(8)
+ START_DATE	入职日期			    DATE
+ COMMENTS					    VARCHAR2(255)
+ MANAGER_ID	领导编号		            NUMBER(7)
+ TITLE		职位				    VARCHAR2(25)
+ DEPT_ID	部门编号		            NUMBER(7)
+ SALARY 	工资				    NUMBER(11,2)   //小数点前有9位
+ COMMISSION_PCT 提成				    NUMBER(4,2)
+
+
+
+Name：字段名
+Null?：字段是否允许为空
+	NOT NULL：不允许为空
+Type：数据类型
+	NUMBER(p,s)		数字类型（长度，精度）
+	VARCHAR2(n)		变长字符串类型（最大长度）
+	CHAR（n）		定长字符串类型（长度）
+	DATE			日期类型 可以存放时间
+
+
+
+/*二. select语句*/
+选择：当全部列被选中，只有部分行被选中   ——
+投影：当全部行被选中，只有部分列被选中   |
+表连接：当查询的数据来自于多张表，就需要把多张表连接起来使用
+
+
+/*2.1 select...from 子句*/
+	select 字段 from 表名；  	（相当于投影）
+
+1. 查询单列
+	select 字段 from 表名；  	
+
+		查询员工的工资
+		select salary from s_emp;	
+
+2. 查询多列
+	select 字段1，字符2，... from 表名；
+	
+		查询每个员工的first_name,title,salary
+		select first_name,title,salary from s_emp;
+
+	sql中输入的命令行原则上不区分大小写，但是字段值区分
+
+3. 查询表中全部数据
+	用 * 代表全部列
+	
+		查询s_emp表中的全部数据
+			select * from s_emp;	
+
+4. 表中字段的数学运算（一般情况是数字类型）
+	+ - * /
+	
+		查询每个员工的年收入
+			select salary*12+200 from s_emp;
+
+5. 字段或者表达式的别名
+	字段或表达式 [as] 别名		[]里的内容可选的 可省略的
+
+		select salary*12+200 YearSal from s_emp;
+	
+	默认是别名显示全大写
+
+	""  用双引号把别名括起来  原样显示
+
+		select salary*12+200 "YearSal" from s_emp;
+
+	别名只能是一个单词，不能空格隔开写两个单词，可以使用 ""
+		
+		select salary*12*200 "Year Sal" from s_emp;
+
+	字段起别名 需要加 ""  
+	不加 "" 默认别名格式为全大写
+
+		select id "usrid" from s_emp;
+
+6. 可以使用小括号()改变运算的优先级别
+
+		select 12*salary+200 from s_emp;
+		select 12*(salary+200) from s_emp;
+
+7. 字符串和拼接
+	
+	sql中字符串用单引号 ''
+
+		'hello world'   'a'
+
+	字符串的拼接 ||
+
+		查看员工姓名
+			select first_name||last_name "Name" from s_emp;
+		在名和姓之间拼接一个 .
+			select first_name||'.'||last_name "Name" from s_emp;
+		拼接一个单引号 /*this's       '转义符 '单引号*/          
+			select first_name||''''||last_name "Name" from s_emp;
+		
+8. null值的处理
+
+	表达式中只要有一个为 null，整个表达式的值为 null
+  	
+	处理表达式中有 null 情况	
+	nvl（par1，par2）		nvl（字段，值）
+		当par1不为 null，函数的返回值是par1
+		当par1为 null，函数返回值是par2
+
+	null 值要尽早处理
+		
+		select id,title,12*salary*(1+nvl(commission_pct,0)/100) "yearsal" from s_emp;
+
+9. 排重显示 distinct
+
+		从员工信息表中查看职位类型
+			select distinct titile from s_emp;
+	
+	多列排重
+		select distinct title,dept_id from s_emp;
+			在相同职位的不同部门都会列出
+				
+
+/*2.2 where子句*/
+	select 字段 from 表名 where 条件；
+		根据条件对数据进程筛选，符合条件的选中，不符合条件的过滤掉
+
+1. 数字类型的条件
+	查看工资小于800的员工的信息
+		select id,first_name,salary from s_emp where salary<800;
+
+2. 字符串类型的条件
+	查看名字是 Ben 的 id，first_name,title
+		select id,first_name,title from s_emp where first_name='Ben';	
+	字段值是区分大小写的	
+	sql中等于 =
+
+3. where 条件中的运算符
+	1. >  <  >=  <=  =  !=(<>  ^=)
+		where 字段 符号 值
+
+	2. sql中提供的运算符
+		a.表达一个区间  [a,b]
+			between a and b
+
+			查看工资在[1000,1500]内的员工的信息
+				select id,first_name,salary from s_emp where salary between 1000 and 1500;
+				
+			练习：查看编号在[11,15]区间内员工的信息
+				select id,first_name,salary from s_emp where id between 11 and 15;
+
+		b.表示一个列表
+			where 字段 in（列表）
+			
+			查看部门编号为 31 42 45 的员工信息 
+				select id,first_name,dept_id from s_emp where dept_id in(31,42,45);
+						列出了部门31，42，45的员工信息
+	
+		c.模糊查询
+			where 字段 like ''
+
+			通配符：&  _
+			%：任意长度的任意字符
+			_：一位任意字符
+			where 字段 like '%龙%'
+				
+			查看所有first_name以'A'开头的员工的信息
+				select id,first_name from s_emp where first_name like 'A%';
+			查看所有first_name第二个字符为'a'的员工的信息
+				select id,first_name from s_emp where first_name like '_a%';
+
+
+			user_tables:保存所有用户表的信息
+			desc user_tables;
+
+			select count(*) from user_tables;  计算user_tables中用户个数
+
+			select table_name from user_tables where table_name like 'S%';
+
+			查看user_tables表中所有以'S_'开头的表名 
+				select table_name from user_tables where table_name like 'S\_%' escape '\';  /*'*/
+			escape说明是哪个字符后边需要转义  让下划线不代表一个字符 而是代表下划线本身
+
+		d.如何判断 null
+			where 字段 is null
+			
+			找出manager_id为null的员工的信息
+				select id，first_name,manager_id from s_emp where manager_id is null;
+
+	3. sql中的逻辑运算符
+		and 逻辑与
+		or  逻辑或
+		not 逻辑非
+		
+		查询工资在1200到1400之间的员工的信息
+			select id,first_name,salary from s_emp where salary > 1200 and salary < 1400;
+			select id,first_name,salary from s_emp where id between 1200 and 1400;
+
+		查询部门编号为 31 42 45 的员工信息
+			select id,first_name,salary from s_emp where dept_id=31 or dept_id=42 or dept_id=45;
+			select id,first_name,dept_id from s_emp where dept_id in(31,42,45);
+
+		     对立面
+		>		<=
+		<		>=
+		=		!=
+		between and	not between and
+		in		not in(注意null)
+		like		not like
+		is null		is not null		
+	
+		查看提成不为null的员工的信息
+			select id,first_name,commission_pct from s_emp where commission_pct is not null;
+
+
+/*2.3 order by 子句*/
+	order by 子句在select语句的最后
+
+	select
+	  from
+	    where
+	      order by
+
+	order by 排序标准 排序方式
+	asc 升序（字典顺序 自然顺序） 默认方式
+	desc 降序
+	
+	查询员工的信息 并按照工资降序排序
+		select id,first_name,salary from s_emp order by salary desc;
+	
+	查询员工信息 按照部门编号升序排序
+		select id,first_name,dept_id from s_emp order by dept_id;
+
+	排序时，null 值按最大值处理
+
+	
+	多列排序	
+	
+	按照工资降序排序，如果工资相同，按编号升序排序
+		select id,first_name,salary from s_emp order by salary desc,id asc;
+
+	查询工资高于1300的员工的信息 并按照工资降序排序
+		select id,first_name,salary 
+			from s_emp 
+				where salary>1300
+					order by salary desc;
+
+
+
+作业：
+查看员工的工资
+	select salary from s_emp;
+查看员工的id，first_name,salary
+	select id,first_name,salary from s_emp;
+查看表中全部信息
+	select * from s_emp;
+查看员工的年收入 考虑提成
+	select 12*salary*(1+nvl(COMMISSION_PCT/100,0)) from s_emp;
+显示员工的姓名 其中名和姓之间用 . 隔开
+	select first_name||'.'||last_name from s_emp;
+查看表中员工的职位
+	select id,title from s_emp;
+查询员工名字为'Ben'的信息 显示id，first_name,salary
+	select id,first_name,salary from s_emp where first_name like 'Ben';
+查询工资在[1200,1400]区间内的员工的信息
+	select id,first_name,salary from s_emp where salary between 1200 and 1400;
+查询部门编号为31 42 45的员工的信息
+	select id,first_name,salary from s_emp where dept_id in(31,42,45);
+查看first_name中包含'a'的员工信息
+	select id,first_name,salary from s_emp where first_name like '%a%';
+查看manager_id为null的员工信息
+	select id,first_name,salary from s_emp where manager_id is null;
+查看提成不为空的员工信息
+	select id,first_name,salary from s_emp where commission_pct is not null;
+按照员工的工资降序排序，显示id,first_name,salary 如果工资相同，则按照编号升序排序
+	select id,first_name,salary from s_emp order by salary desc,id asc;
+
+/*2.4 单行函数*/
+1. 单行函数
+	针对sql语句影响的每一行都做处理，每一行产生结果
+	upper 把字段变成大写
+	select upper(first_name) from s_emp;
+
+	组函数
+	针对sql语句影响的一组数据做处理，每组产生一个结果
+		select count(first_name) from s_emp;
+
+2.测试表：dual  	(dummy 傀儡 虚设)
+	desc dual;
+
+3. 字符串函数
+	upper(x):把x转换成全大写
+
+	lower(x):把x转换成全小写
+		select lower('FGVWsadasrecAAW') from dual;
+
+	initcap(x):把x中的每个单词转换成首字符大写
+		select initcap('this is string') from dual;
+
+	concat(x,y):字符串的连接  相当于 ||
+		select concat(first_name,last_name) from s_emp;
+		select concat(concat(first_name,'.'),last_name) from s_emp;
+
+	substr(x,start[,length]):截取子字符串
+		x：源字符串
+		start：开始截取的位置 从1开始
+			写成0 按1处理
+			负数：表示从右边计数 截取
+		length：截取的子字符串的长度 可以省略 省略时表示截取到字符串的结尾
+	
+		select substr('Hello World',3,3) from dual;  	=> llo
+		select substr('Hello World',3) from dual; 	=> llo World
+		select substr('Hello World',-5,5) from dual; 	=> World
+		select substr('Hello World',-5,10) from dual;    => World
+
+	length(x):返回x的长度
+		select length('Hello world!') from dual;	=> 12
+
+	练习：用两种方法获取s_emp表中first_name字段的后三位
+		select first_name,substr(first_name,-3) from s_emp;
+		select first_name,substr(first_name,length(first_name)-2) from s_emp; /*length()-0 就是获取最后一位*/
+
+4. 数字函数
+	round(x[,y])：四舍五入  
+		x：数字 
+		y：在省略时，默认y=0   	round(33.56) => 34
+		   正整数时，四舍五入到小数点后y位
+		   负整数时，四舍五入到小数点前面|y|位
+			select round(4.567) from dual; 		=> 5
+			select round(4.567,2) from dual;	=> 4.57
+			select round(456.789,-2) from dual;	=> 500
+	
+	trunc(x[,y]):截断 (取小)
+		x：数字 
+		y：在省略时，默认y=0   	trunc(33.56) => 33
+		   正整数时，截断到小数点后y位
+		   负整数时，截断到小数点前面|y|位		
+			select trunc(4.567) from dual; 		=> 4
+			select trunc(4.567,2) from dual;	=> 4.56
+			select trunc(456.789,-2) from dual;	=> 400
+	
+5. 日期类型和日期函数
+	date：
+	日期类型的默认格式：
+	英文：dd-MON-yy    	29-APR-16
+	中文：dd-n月-yy		29-4月-16
+	
+	日期格式的各个部分
+	yyyy		4位年（数字）		2016
+	year		年份的拼写		twenty sixteen
+	mm		2位月（04）
+	mon(MON)	月份单词的前三位（apr APR）
+	month(MONTH)	月份单词的全拼（april APRIL）
+	dd		2位日（29）
+	dy		3位的星期几（fri）
+	day		星期几的全拼（friday）
+
+	hh		12小时制的小时
+	hh24		24小时制的小时
+	mi		分钟
+	ss		秒
+	am		上午（am）下午（pm）	不能和hh24同时用
+
+		select id,first_name,start_date from s_emp;
+	
+	系统日期：sysdate
+		select sysdate from dual;	=> 29-APR-16
+
+	常用的日期函数
+	日期可以使用算术运算符
+		select sysdate+2 from dual;	=> 01-MAY-16
+		select sysdate-to_date('10-APR-16') from dual;	=> 19.4344213
+	
+	add_months(d,n):在日期d上加n个月
+		select add_months(sysdate,4) from dual;		=> 29-AUG-16
+	
+	months_between(d1,d2):返回两个日期相差的月数
+
+	next_day(d,dw):返回日期d的下一个dw（星期几）
+		select next_day(sysdate-2,'friday') from dual;	=> 29-APR-16
+
+	last_day(d):返回日期d所在月份的最后一天	
+		select last_day(sysdate) from dual;		=> 30-APR-16
+
+6.类型转换的函数
+	to_char(d|n[,fmt]):把日期d或者数字n转换成特定格式的字符串
+		fmt：格式化字符串
+		
+		日期：
+			select to_char(sysdate,'yyyy-mm-dd hh24:mi:ss day') from dual; 
+				=> 2016-04-29 11:15:05 friday
+
+		按照入职日期升序排序
+			select id,first_name,to_char(start_date,'yyyy-mm-dd') from s_emp order by start_date;
+
+		数字：
+		数字转换成字符串的格式：
+			9	小数点前表示0-9，小数点后表示1-9
+			0	小数点前表示前置前导0，小数点后表示0-9
+			$	数字前边加美元符号
+			L	数字前边加本地货币符号
+			. 	小数点
+			,	分隔符	2,123,456,789		
+			
+		格式字符串用fm开头
+				select to_char(1234567.89,'fm$099,999,999.99') from dual;
+					=> $001,234,567.89
+
+	
+	to_date(x[,fmt]):把x按照fmt的格式转换成日期
+
+			select to_date('2008-08-08 20:00:00','yyyy-mm-dd hh24:mi:ss') from dual;
+				=> 08-AUG-08
+
+	to_number(x[,fmt]):把一个字符串转换成数字类型
+			
+			select to_number('$12,366.456','fm$99,999.999') from dual;
+				=> 12366.456
+
+7.函数的嵌套
+	一个函数的返回值作为另一个函数的参数
+	
+	查看每个员工的id，first_name,manager_id,把manager_id为null的显示为'BOSS'
+
+		nvl(字段，值):参数可以是任何类型，但是两个参数必须类型相同
+
+		select id,first_name,nvl(manager_id,'BOSS') from s_emp;  --error
+		select id,first_name,nvl(to_char(manager_id),'''BOSS''') from s_emp;
+
+
+
+
+

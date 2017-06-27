@@ -1,0 +1,174 @@
+通过网络把PC上的文件发送到开发板内存
+1、配置PC的网络
+   配置win的网络（IP地址，子网掩码）
+       和开发板的IP在一个网段
+   配置虚拟机的网络设置
+       网络方式使用桥接方式
+       指定桥接到的和开发板连接的网卡
+   配置ubuntu系统的IP地址
+       和u-boot里面的serverip是相同的
+       192.168.1.8
+       
+2、验证网络
+   使用u-boot的ping命令
+   如果ping不通
+       1、先检查软件配置
+       2、可以尝试关闭PC端的防火墙
+       3、检查硬件
+          网线、网卡（PC端和开发板端）
+       
+3、使用u-boot的tftp命令下载
+   需要服务端：我们是在ubuntu里面
+   安装、配置
+   我们用的工作目录 /tftpboot
+   
+   开发板端在u-boot中使用：
+   
+   tftp 内存地址  文件名
+   
+   tftp 0x20008000 u-boot.bin
+
+任务：编写C程序控制LED1的亮和灭
+      一、通过看原理图
+          1、LED1的控制端和S5PV210微处理器的管脚的
+             连接关系
+             GPC1 3      
+             GPC0 3
+          2、S5PV210微处理器的管脚输出高电平
+             LED1亮还是低电平LED1亮
+             高电平  LED1 亮
+             低电平  LED1 灭
+     二、通过看微处理器的手册
+         如何控制对应管脚输出高电平或者低电平
+         GPC0 3   GPC1 3
+         1、配置GPIO口
+            配置寄存器  （地址）
+                 配置成输出口
+            上下拉电阻寄存器
+                 禁止上、下拉电阻寄存器
+         2、控制GPIO口输出高或者低电平 
+                 数据寄存器
+                 如果输出高电平  数据寄存器对应位给1
+                 如果输出低电平  数据寄存器对应位给0
+                 
+   关于寄存器（GPIO寄存器类似的）访问：
+   注意事项：
+     保证我只修改我要修改的位，不修改其他的位
+     读取->修改->写回
+     
+     
+     /opt/
+     
+     压缩包，解压就可以了
+     
+     
+     设置 PATH，把arm-linux-gcc的执行文件路径加进去。
+
+sudo cp /mnt/hgfs/shared/arm-2009q3.tar.bz2 /opt    解压到opt内
+sudo tar xvfj arm-2009q3.tar.bz2 
+
+sudo vim /etc/environment     用gcc version 4.4.1   
+添加PATH  /opt/arm-2009q3/bin:
+
+source /etc/environment
+. /etc/environment
+
+     
+     把led.c变成可以在开发板内存中运行的程序
+     1、编译
+     arm-linux-gcc -march=armv5te  -nostdlib  -c 
+                   -o led.o  led.c
+                   
+                   -march=armv5te  指定生成的指令集
+                                   使用arm的armv5te版本
+                   -nostdlib  告诉gcc不使用C语言的标准库
+    2、链接
+    
+    arm-linux-ld -nostartfiles -nostdlib 
+                 -Ttext=0x20008000 
+                 -e led_test led.o  -o led
+                 
+                 
+                 -nostartfiles  指定没有启动文件
+                 -nostdlib      不用使用标准库
+                 -Ttext=0x20008000 指定代码段的起始位置
+                                   0x20008000
+                 -e led_test    通常指定和你的第一个运行的函数就可以了
+                                （入口点）
+                                在我们的案例里面没有用（就一个函数）
+                                
+     3、把链接生成的程序，转换成二进制的文件
+        
+        arm-linux-objcopy -O binary led led.bin
+          把led转换成led.bin    led.bin是二进制的去掉了格式信息
+        
+           -O binary 指定转换成二进制（-大写的欧）
+           
+     4、把led.bin放到开发板上运行，测试
+        可以通过usb下载，串口下载，网络下载
+        
+        用网络
+        把led.bin复制到 /tftpboot
+        
+        开发板端u-boot中执行tftp
+        
+        tftp 0x20008000 led.bin
+        
+        如果下载不下来，出问题，
+           1、检查网络
+           2、配置
+           3、重新启动tftp服务器
+
+      5、在u-boot中运行led.bin
+         使用u-boot的go命令运行
+         go 0x20008000
+		执行程序
+                  
+        奇校验： 0000 0000  1
+                 0000 0001  0
+                 0101 1000  0
+                 
+        偶校验： 0000 0000  0
+                 0000 0001  1
+                 1010 1000  1
+                 
+                                  
+                           
+        看S5PV210串口的寄存器：       
+          
+          ULCON0
+          UCON0
+          
+          UFCON0    禁止FIFO，值给0
+          UMCON0    禁止FIFO，值给0
+          
+          UTRSTAT0  
+                             
+          配置串口波特率
+          UBRDIV0
+          UDIVSLOT0
+          
+          
+          UTXH0
+          URXH0
+          
+          串口的发送和接收管脚
+            看看GPIO章节
+            把对应的管脚配置为串口功能
+
+
+sudo cp /mnt/hgfs/shared/arm-2009q3.tar.bz2 /opt    解压到opt内
+sudo tar xvfj arm-2009q3.tar.bz2 
+
+sudo vim /etc/environment     用gcc version 4.4.1   
+添加PATH  /opt/arm-2009q3/bin:
+
+source /etc/environment
+. /etc/environment
+
+
+arm-linux-gcc -march=armv5te -nostdlib -c -o led.o led.c
+
+arm-linux-ld -nostartfiles -nostdlib -Ttext=0x20008000 -e led_test led.o -o led
+
+arm-linux-objcopy -O binary led led.bin

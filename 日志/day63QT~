@@ -1,0 +1,185 @@
+关键字：
+
+//-------------------------------------------------------------------------------------
+  1 #include<QApplication>  //应用程序类
+  2 #include<QLabel>        //标签部件
+  3 
+  4 //进程入口函数
+  5 int main(int argc,char* argv[])
+  6 {   
+  7     //创建应用程序对象
+  8     QApplication app(argc, argv);
+  9     //创建标签部件对象
+ 10     QLabel lab("Hello,Qt!");
+ 11     //显示标签部件对象
+ 12     lab.show();
+ 13     //进入事情循环，返回进程退出码
+ 14     return app.exec();
+ 15 }
+
+
+[tarena@~/qt/day02/hello]$vi main.cpp
+[tarena@~/qt/day02/hello]$/*qmake -project*/ 生成工程文件 与文件夹同名的.pro文件
+[tarena@~/qt/day02/hello]$ls
+/*hello.pro*/  main.cpp
+[tarena@~/qt/day02/hello]$/*qmake*/	产生Makefile文件
+[tarena@~/qt/day02/hello]$ls
+hello.pro  main.cpp  /*Makefile*/
+[tarena@~/qt/day02/hello]$/*make*/
+g++ -c -pipe -O2 -Wall -W -D_REENTRANT -DQT_WEBKIT -DQT_NO_DEBUG -DQT_GUI_LIB -DQT_CORE_LIB -DQT_SHARED -I/usr/share/qt4/mkspecs/linux-g++ -I. -I/usr/include/qt4/QtCore -I/usr/include/qt4/QtGui -I/usr/include/qt4 -I. -I. -o main.o main.cpp
+g++ -Wl,-O1 -o hello main.o    -L/usr/lib/i386-linux-gnu -lQtGui -lQtCore -lpthread 
+[tarena@~/qt/day02/hello]$ls
+hello  hello.pro  main.cpp  main.o  Makefile
+[tarena@~/qt/day02/hello]$hello
+
+
+//-------------------------------------------------------------------------------------
+
+  1 #include<QApplication>  //应用程序类
+  2 #include<QLabel>        //标签部件
+  3 
+  4 //进程入口函数
+  5 int main(int argc,char* argv[])
+  6 {
+  7     //创建应用程序对象
+  8     QApplication app(argc, argv);
+  9     //创建标签部件对象
+ 10     QLabel lab("<h2><i>Hello</i>,<font color=red>Qt</font>!</h2>");
+ 11     //<h1>1号标题字 <i>斜体 <font >字体颜色
+ 12     //添加水平居中属性
+ 13     lab.setAlignment(lab.alignment()|Qt::AlignHCenter);
+ 14     //设置部件大小属性:宽400像素，高300像素
+ 15     lab.resize(400,300);
+ 16     //显示标签部件对象
+ 17     lab.show();
+ 18     //进入事情循环，返回进程退出码
+ 19     return app.exec();
+ 20 }
+
+//-------------------------------------------------------------------------------------
+
+//utf-8
+  1 #include<QApplication>  //应用程序类
+  2 #include<QLabel>        //标签部件类
+  3 #include<QTextCodec>    //文本解码器类
+
+  4 //进程入口函数
+  5 int main(int argc,char* argv[])
+  6 {
+  7     //创建文本解码器对象，并将其交给编码翻译器
+  8     QTextCodec::setCodecForTr(
+  9         QTextCodec::codecForName("utf-8"));
+ 10     //创建应用程序对象
+ 11     QApplication app(argc, argv);
+ 12     //创建标签部件对象
+ 13     QLabel lab(QObject::tr(
+ 14         "<h2><i>你好Hello</i>,<font color=red>Qt</font>!</h2>"));
+ 15     //<h1>1号标题字 <i>斜体 <font >字体颜色
+ 16     //添加水平居中属性
+ 17     lab.setAlignment(lab.alignment()|Qt::AlignHCenter);
+ 18     //设置部件大小属性:宽400像素，高300像素
+ 19     lab.resize(400,300);
+ 20     //显示标签部件对象
+ 21     lab.show();
+ 22     //进入事情循环，返回进程退出码
+ 23     return app.exec();
+ 24 }
+
+
+//-------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

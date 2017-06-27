@@ -1,0 +1,832 @@
+关键字：名字空间  结构，联合和枚举  字符串  布尔型  函数重载  类型转换对重载解析的影响  C++换名
+
+	类和对象
+	操作符重载
+	继承和多态
+	异常
+	I/O流
+
+C     UC    C++
+库 系统调用 对象
+
+一. C++语言背景介绍
+
+二. 第一个C++程序--Hello,World
+
+	/* :: 作用域限定 */
+ 
+	vi hello.cpp
+	g++ hello.cpp  或是 gcc hello.cpp -lstdc++
+
+  1 #include<iostream>
+  2 //#include<stdio.h>
+    //#include<cstdio>
+  3 int main(void)
+  4 {
+  5     //将hello，world！字符串字面值插入到std名字空间中的cout对象里，
+  6     //然后再将std名字空间中的endl对象也插入到cout对象里
+  7     //std 标准名字空间
+  8     //cout 控制台输出设备对象	console out
+  9     //endl 换行符对象
+ 10     std::cout << "Hello,World!" << std::endl;
+ 11     return 0;
+ 12 }
+
+
+1. 编译器
+	g++ hello.cpp
+	gcc hello.cpp -lstdc++
+
+2. 扩展名
+	.cpp/.cc/.C/.cxx
+	也可以用.c,但是要加上 -x c++ 编译选项  // g++ 文件名.c -x c++
+
+3. 头文件
+	#include<iostream>
+	和
+	#include<cstdio>
+	或
+	#include<stdio.h>
+
+4. I/O流对象
+
+	C++对象			C流指针		UC文件描述符
+
+	cin 	-标准输入   -	stdin     - 	0
+	cout 	-标准输出   -	stdout     - 	1
+	cerr 	-标准错误   -	stderr     - 	2
+
+5. 插入和提取运算符
+	<< - 插入，将右操作数对象插入到左操作数对象中
+	>> - 提取，从左操作数对象中提取数据到右操作数对象中
+
+	    std::cout << "请输入表达式：";
+	    int x,y;
+	    char op; 
+	    std::cin >> x >> op >> y;
+	    int z;
+	    switch(op)
+	    {   
+		case '+':z=x+y;break;
+		case '-':z=x-y;break;
+		case '*':z=x*y;break;
+		case '/':z=x/y;break;
+		default:std::cerr << "无效表达式！"<<std::endl;break;
+	    }   
+	    std::cout<<x<<op<<y<<'='<<z<<std::endl;
+
+
+6. 名字空间和作用域限定操作符
+	std - 所有标准C++提供的类型，函数，对象都位于该名字空间中
+	::  - 表示其右操作数隶属于其左操作数所表示的作用域
+
+
+
+三. 名字空间
+
+1. 为什么需要名字空间
+	1.名字冲突
+		namespace ns1
+		{
+			int x=10;
+		}                    //防止名字冲突
+		namespace ns2
+		{
+			int x=20;
+		}
+
+	2.模块划分
+		namespace network 
+		{
+   			send
+   			recv
+   			connect
+   			...
+		}
+		namespace biz 
+		{
+   			save
+   			draw
+   			query
+   			...
+		}
+
+
+
+2. 什么是名字空间
+	namespace 名字空间名
+	{
+		名字空间成员1；
+		名字空间成员2；
+		....
+	}
+
+	名字空间成员：变量，函数或者类型，但是宏定义不受名字空间限制（宏定义在预编译时处理）
+
+
+	同名名字空间的成员无论被声明在同一个文件中还是不同的文件中，最终都会被编译器合并为一个名字空间；
+	namespace 名字空间名
+	{
+		名字空间成员1；
+	}
+	namespace 名字空间名
+	{
+		名字空间成员2；
+	}
+	namespace 名字空间名
+	{
+		名字空间成员3
+	}
+
+	
+
+	名字空间中函数的声明和定义如果分开书写，其定义部分必须借助作用域限定操作符 “::” 明确所定义的函数隶属于哪个名字空间，以及与该函数的声明保持一致
+
+	#include<iostream>
+	namespace icbc
+	{
+		int balance=0;
+
+		void save(int money)
+		{
+			balance += money;
+		}
+
+		void draw(int money)
+		{
+			balance -=money;
+		}
+
+		void query(void)
+		{
+			std::cout << balance <<std::endl;
+		}
+	}
+
+	namespace abc
+	{
+		int balance=0;
+
+		void save(int money)
+		{
+			balance += money;
+		}
+
+		void draw(int money)
+		{
+			balance -=money;
+		}
+		void query();	//名字空间中的函数声明
+	}
+
+	int main()
+	{
+		icbc::query();
+		icbc::save(10000);
+		icbc::query();
+		icbc::draw(5000);
+		icbc::query();
+
+		abc::query();
+		abc::save(5000);
+		abc::query();
+		abc::draw(200);
+		abc::query();
+		return 0;
+	}
+
+	void abc::query(void)	//名字空间中函数的定义
+	{
+		std::cout << balance <<std::endl;
+	}
+
+
+
+3. 怎么用名字空间
+	1.在名字空间内部访问本空间中的名字，可以直接访问，无需做任何限定
+
+	2.在名字空间外部访问某空间中的名字
+
+		a.作用域限定操作符：名字空间名::名字空间成员名
+			icbc::save(10000);
+
+		b.名字空间指令：using namespace 名字空间名;
+		  名字空间指令表示在当前作用域，该条指令以后的代码，对某个名字空间的所有成员可见，在不发生冲突的前提下，可以省略作用域限定操作符，直接访问之。
+
+		int main()
+		{
+			/*icbc::query();
+			icbc::save(10000);
+			icbc::query();
+			icbc::draw(5000);
+			icbc::query();*/
+			using namespace icbc;
+			query();
+			save(10000);
+			query();
+			draw(5000);
+			query();
+			
+			//abc 就不能再用using了  因为会引发冲突  query() //歧义错误
+			abc::query();
+			abc::save(5000);
+			abc::query();
+			abc::draw(200);
+			abc::query();
+			return 0;
+		}
+	
+
+
+		C.名字空间声明：using 名字空间名::名字空间成员名
+		  将特定的名字空间中的特定成员引入当前作用域，在不发生冲突的前提下，可以省略作用域限定操作符
+
+		int main()
+		{
+			/*icbc::query();
+			icbc::save(10000);
+			icbc::query();
+			icbc::draw(5000);
+			icbc::query();*/
+			using namespace icbc;
+			query();
+			save(10000);
+			query();
+			draw(5000);
+			query();
+			
+			using abc::query;	//名字空间声明
+			//using icbc::query;	//歧义错误 在使用query时 不知道选择哪个函数
+			query();
+			abc::save(5000);
+			//abc::query();
+			query();
+			abc::draw(200);
+			//abc::query();
+			query();
+
+			return 0;
+		}
+
+
+
+
+		D:匿名名字空间：不属于任何有名空间的标识符，会被编译器缺省的置入匿名名字空间中，当存在名字冲突时，可以通过作用限定操作符，指明所访问的标识符源自该匿名空间。
+
+		#include<iostream>
+		int x=5678;
+		/*匿名空间
+		namespace
+		{
+			int x=5678;
+		}
+		*/
+		namespace icbc
+		{
+			int balance=0;
+			int x=1234;
+			void foo(void)
+			{
+				std::cout<<x<<std::endl;   	//1234
+
+				std::cout<< ::x <<std::endl; 	//5678 匿名名字空间 访问的就是全局变量
+			}
+
+
+			void save(int money)
+			{
+				balance += money;
+			}
+
+			void draw(int money)
+			{
+				balance -=money;
+			}
+
+			void query(void)
+			{
+				std::cout << balance <<std::endl;
+			}
+		}
+
+		namespace abc
+		{
+			int balance=0;
+
+			void save(int money)
+			{
+				balance += money;
+			}
+
+			void draw(int money)
+			{
+				balance -=money;
+			}
+			void query();	//声明
+		}
+
+		int main()
+		{
+			icbc::query();
+			icbc::save(10000);
+			icbc::query();
+			icbc::draw(5000);
+			icbc::query();
+
+			abc::query();
+			abc::save(5000);
+			abc::query();
+			abc::draw(200);
+			abc::query();
+
+			int x=9999;	
+			std::cout<<x<<std::endl;  	//9999
+			std::cout<<icbc::x<<std::endl; 	//1234
+			std::cout<< ::x<<std::endl;	//5678	匿名名字空间
+			return 0;
+		}
+
+		void abc::query(void)
+		{
+			std::cout << balance <<std::endl;
+		}
+
+
+		
+		E.名字空间内部还可以定义名字空间，形成名字空间嵌套。访问内层空间中的标识符，需要通过作用域限定操作符从外到内逐层分解，也可以利用名字空间别名，简化空间路径的书写形式。
+		
+		/* 名字空间嵌套 */
+		namespace a
+		{
+			namespace b
+			{
+				namespace c
+				{
+					int data=100;
+				}
+			}
+		}
+
+		std::cout<<  a::b::c::data  <<std::endl;
+
+		/* 名字空间起别名 */
+		namespace tc=a::b::c;	
+			std::cout<< tc::data <<std::endl
+
+		
+	/*简练技巧*/
+	using namespace std;
+
+	cout<< "省略掉std前缀"  << endl;
+
+
+
+四. 结构，联合和枚举
+
+1. 用这三种自定义类型/*声明变量时*/，其前导关键字可以省略。struct union enum 都可以省略
+
+	struct Student{
+		char name[64];
+		int age;
+		int sex;
+	};
+
+	struct Student sa ={"zhangfei",22,1},sc={"zhaoyun",20,0};	
+	---^---
+	前导关键字可以省略
+	Student sa ={"zhangfei",22,1},sc={"zhaoyun",20,0};
+
+
+2. C++的结构体允许定义函数形式的成员，叫做成员函数，而变量形式的成员，则被称为成员变量。
+
+	#include<iostream>
+	using namespace std;
+
+	struct Dog{
+		//成员变量---属性
+		char name[64];
+		int age;
+
+		//成员函数---行为
+		void who(void)
+		{
+			cout<<"我叫"<<name<<",今年"<<age<<"岁."<<endl;
+		}
+		void eat(char const* food)
+		{
+			cout<<"我吃"<<food<<"!"<<endl;
+		}
+		void talk(void)
+		{
+			cout<<"汪汪。。。"<<endl;
+		}
+	};
+
+	int main(void)
+	{
+		Dog dog1={"小白",1},
+		    dog2={"毛团",2};
+		dog1.who();
+		dog1.eat("鸡骨头");
+		dog1.talk();
+		dog2.who();
+		dog2.eat("排骨");
+		dog2.talk();
+	}
+
+	我叫小白,今年1岁.
+	我吃鸡骨头!
+	汪汪。。。
+	我叫毛团,今年2岁.
+	我吃排骨!
+	汪汪。。。
+
+
+3. C++增加了匿名联合的用法，所谓匿名联合其本质并不是定义数据类型，而是规定了变量在内存中的布局形式。
+	不属于任何有名空间的标识符，会被编译器缺省的置入匿名名字空间中
+
+一份数据2份形式
+
+	#include<iostream>
+	#include<cstdio>
+	using namespace std;
+
+	int main(void)
+	{
+		union{ //匿名联合
+			int i; 		//一份数据2份形式（用途）
+			char c[4];
+		};
+		i=0x12345678;		//一份数据2份形式 用int是整型  用char是字符形式
+		printf("%#x %#x %#x %#x\n",c[0],c[1],c[2],c[3]);
+		printf("%p %p",&i,c);
+		return 0;
+	}
+
+	结果：
+	0x78 0x56 0x34 0x12
+	0xbf9c6fd8 0xbf9c6fd8
+
+
+4. C++的枚举是独立的数据类型，和整型之间的类型转换需要服从编译器内置的转换规则：
+	枚举 -> 整型  （隐式转换）
+	整型 -> 枚举  （显式转换） x=(X)0;   x=X(e);  两种形式
+
+	#include<iostream>
+	using namespace std;
+
+	int main(void)
+	{
+		enum X{A,B,C,D,E};
+		X x;
+		x=A; 
+		cout<< x <<endl;
+		//x=0; 错误	//编译器只看类型 不看值
+		x=(X)0;
+
+		/*int e=4;错误
+		x=e; */
+		int e=4;
+		x=X(e);
+
+		e=E; //枚举到整型可以隐式
+	
+		return 0;
+	}
+
+
+
+
+五. 字符串	C++中的string类型是basic_string模板的实例类
+#include<string>
+typedef basic_string<char> string;
+
+string s1,s2;
+
+
+	#include<iostream> //string在iostream中有包含
+	//#include<string> //c++字符串处理
+	#include<cstdio>
+	#include<cstring> //c字符串处理
+	using namespace std;
+
+	int main(void)
+	{
+		/*
+		char text[12];
+		scanf("%s",text);
+		printf("%s\n",text);
+		*/
+
+		string text;
+		cin >> text;
+		cout << text <<endl;
+	
+		/*
+		char s1[10]="123456789";
+		char s2[9];
+		strcpy(s2,s1);
+		*/
+
+		string s1="123456789";
+		string s2;
+		s2=s1;
+		cout << s2 <<endl;	//123456789
+
+		string s3="ABCDEFG";
+		s2=s1+s3;
+		cout << s2<<endl;	//123456789ABCDEFG
+
+		string s4="tata";
+		string s5="microsoft";
+		cout << (s4<s5) <<endl; //0  	如果表达式是(s4>s5) 结果为1
+
+		s5[0] = 'M';
+		cout << s5 <<endl;	//Microsoft
+		cout << s5.size() <<endl;	//9
+		cout << s5.length() <<endl;	//9
+		char const* p=s5.c_str();
+		cout << p <<endl;		//Microsoft
+		cout << strlen(p) <<endl;	//9
+	
+		cout <<sizeof(s4)<<"  " <<sizeof(s5) <<endl; //sizeof 求的是指向字符串的指针大小 4字节  //4   4
+		return 0;
+	}
+
+
+
+六. 布尔型
+bool - true/false
+
+1个字节 ， 1 就是 true ，0 就是 false
+
+任何类型的字面值，变量或表达式都可以被隐式转换为bool类型，其转换规则就是源值为零即假，非零即真。
+
+//cout<< boolalpha << b <<endl;	//true    1到true  0到false  转换 std::boolalpha
+
+
+	#include<iostream>
+	using namespace std;
+
+	int main(void)
+	{
+		bool b =true;
+		cout<<sizeof(b)<<endl;	//1
+		cout<< b <<endl;	//1
+		cout<< boolalpha << b <<endl;	//true
+	
+		b=!b;
+		cout<< b <<endl;	//false
+		b=19;
+		cout<< b <<endl;	//true
+		b=3.14;
+		cout<< b <<endl;	//true
+		b="hello world";
+		cout<< b <<endl;	//true
+		b=0;
+		cout<< b <<endl;	//false
+		b=0.0;
+		cout<< b <<endl;	//false
+		b=NULL;
+		cout<< b <<endl;	//false
+		return 0;
+	}
+
+
+七. 操作符别名
+	{  -  <%
+	}  -  %>
+	[  -  <:
+	]  -  :>
+	&& -  and
+	|| -  or
+	!  -  not
+	&  -  bitand
+	|  -  bitor
+ 	^  -  xor
+	...
+
+int main(void)
+<%
+	int a<::> = <%1,2,3,4,5%>;
+	int b = a<:0:> xor a<:1:>;
+	return 0
+%>
+
+ISO-646标准
+
+
+
+
+八. 函数重载
+1. 同一个作用域中，函数名相同，参数表不同的函数，构成重载关系。
+
+2. 编译器根据调用函数时所提供实参的类型，在多个重载版本中挑选一个匹配程度最高的版本，以供调用，这个过程叫做重载解析。
+
+
+	#include<iostream>
+	using namespace std;
+
+	void foo(void)
+	{
+		cout << 1 <<endl;
+	}
+
+	void foo(int a)
+	{
+		cout << 2 <<endl;
+	}
+
+	//void foo(int b) {}   和void foo(int a) 的形参类型相同
+
+	void foo(int a,double b)
+	{
+		cout << 3 <<endl;
+	}
+
+	void foo(double a,int b)
+	{
+		cout << 4 <<endl;
+	}
+	/*
+	int foo(double a,int b)	 和void foo(double a,int b) 有歧义 不看返回值类型
+	{
+		return 0;
+	}
+	*/
+	int main(void)
+	{
+		foo();		//1
+		foo(1);		//2
+		foo(1,1.);	//3
+		foo(1.,1);	//4
+		return 0;
+	}
+
+/*----------------------------------------------------------------------------------------------*/
+
+练习：
+#include<iostream>
+using namespace std;
+namespace ns1{
+	void foo(int arg)
+	{
+		cout<< "ns1::foo:"<< arg <<endl;
+	}
+}
+namespace ns2{
+	void foo(double arg)
+	{
+		cout<< "ns2::foo:"<<arg <<endl;
+	}
+}
+
+int main(void)
+{
+	using namespace ns1;  	//名字空间指令
+	using namespace ns2;	//名字空间指令
+	foo(1);			/*名字空间指令表示在当前作用域，该条指令以后的代码，对某个名字空间的所有成员可见*/
+	foo(1.2);		/*名字空间指令以后的代码对可见名字空间成员的引用，可省略作用域限定符*/ 
+	using ns1::foo;		//名字空间声明  小作用域隐藏大作用域 内层作用域隐藏外层作用域
+	foo(1);			/*名字空间声明用于将某个名字空间中的特定的标识符引入当前作用域*/
+	foo(1.2);  
+	using ns2::foo;		//名字空间声明
+	foo(1);
+	foo(1.2);
+	return 0;
+}
+	结果：
+	ns1::foo:1
+	ns2::foo:1.2
+	ns1::foo:1
+	ns1::foo:1
+	ns1::foo:1
+	ns2::foo:1.2
+
+/*名字空间指令与声明的区别*/
+	名字空间指令只是将该名字空间指定为可见，并不对作用域构成任何影响 （只是可见）
+	名字空间声明将声明的标识符引入当前作用域，就如同该标识符在当前作用域中被声明一样（改变作用域）
+
+/*-------------------------------------------------------------------------------------------*/
+
+
+3. 类型转换对重载解析的影响
+
+加常转换 > 升级转换 > 有损转换 > 省略号匹配
+
+	#include<iostream>
+	using namespace std;
+
+	//char -> int  升级转换
+	void foo (char *p,int i)
+	{
+		cout << 1 <<endl;
+	}
+
+	//char* -> char const*  加常转换
+	void foo (char const *cp,char c)
+	{
+		cout << 2 <<endl;
+	}
+
+	int main()
+	{
+		char *p,c;
+		foo(p,c);	//2   加常转换优于升级转换
+		return 0;
+	}
+
+
+
+	#include<iostream>
+	using namespace std;
+
+	// short -> char  有损转换
+	void foo(char c)
+	{
+		cout << 1 << endl;
+	}
+
+	// short -> int  升级转换
+	void foo(int i)
+	{
+		cout << 2 << endl;
+	}
+
+	// short -> long long  过分升级
+	void foo(long long i)
+	{
+		cout << 3 << endl;
+	}
+
+	int main(void)
+	{
+		short s;
+		foo(s); //2  升级转换 > 有损转换
+		return 0;
+	}
+
+
+	#include<iostream>
+	using namespace std;
+
+	// void* -> ...  省略号匹配
+	void foo(double d, ...)
+	{
+		cout << 1 << endl;
+	}
+
+	// double -> int  有损转换
+	void foo(int i ,void *p)
+	{
+		cout << 2 << endl; 
+	}
+
+	int main()
+	{
+		double d;
+		void *p;
+		foo(d,p);//2  有损转换 > 省略号匹配 
+	}
+
+
+
+4. C++换名
+	1. 函数重载实际上是通过编译器对函数名的替换实现的，被换过的函数名中包含了参数表的类型信息，因此具有重载关系的函数，在目标模块中的函数名是不同的。
+
+	2. 通过 extern "C" 关键字可以要求C++编译器按照C的方式处理函数接口，即不做换名，当然也就无法重载。
+
+	3. 如果一个头文件同时被C和C++编译器处理，可以通过预定义宏__cplusplus加以区分，该宏仅在C++编译器中有定义。
+
+[tarena@~/c++/day02]$nm cpp_add.o
+00000000 T _Z3addii		//int add(int x,int y)
+0000000e T _Z3adddd		//double add(double x,double y)
+00000034 T _Z3addiii		//double add(int x,int y,int z)
+
+
+[tarena@~/c++/day02]$nm c_add.o		//C语言不会换名
+00000000 T add			//int add(int x,int y)
+
+
+
+extern "C"{			//extern "C"  告诉编译器按照C语言编译 不要换名
+	int add(int x,int y);
+}
+
+
+#ifdef __cplusplus
+
+//按照C++编译器时执行其中的内容
+
+#endif
+
+
+
+
+
+
+
+
+
+
+

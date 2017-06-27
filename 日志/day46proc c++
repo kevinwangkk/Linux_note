@@ -1,0 +1,619 @@
+关键字：proc中和数据库相关的操作  proc程序的开发步骤  宿主变量  指示变量  数组变量  sqlca通信区
+	Pro*c/c++
+
+主要内容
+1.proc简介
+2.proc程序的编写步骤
+3.宿主变量和指示变量
+4.嵌入SQL语句
+5.连接数据库
+6.错误处理
+7.数据的存取更新操作
+8.动态SQL
+
+一. 什么是pro程序
+1. 概念
+	在过程化的编程语言中嵌入SQL语句开发出的应用程序，称为pro程序
+	在通用的编程语言中写入的SQL语句 就称为嵌入式SQL
+
+	宿主语言	pro应用程序
+	c/c++		Pro*c/c++
+	
+
+2. proc/c++
+	在c/c++语言中嵌入SQL语句而开发出的应用程序称为proc/c++
+	目的：使c/c++这种高效率的编程语言成为访问oracle数据库的工具
+
+
+
+二. proc中和数据库相关的操作
+1. 包含sqlca这个数据结构
+	exec sql include sqlca;
+
+2. 连接数据库
+	exec sql connect:用户名/密码; 
+
+3. 查询操作
+	exec sql select ... into ...
+
+4. 断开数据库
+	exec sql commit work release;
+	或
+	exec sql roolback work release;
+
+
+
+三. 写一个c程序的步骤
+1. 编写源代码
+	vi ***.c
+
+2. 编译 链接
+	gcc ***.c
+
+3. 执行
+	./a.out
+
+
+
+四. proc程序的开发步骤
+1. 编写源代码
+	vi ***.pc
+
+2. 预编译 把pc文件变成c文件
+	proc ***.pc   会生成同名的.c文件
+
+3. 编译 链接
+	gcc ***.c -lclntsh		--linux
+	gcc ***.c -lorasql10(11)	--windows
+			 oracle版本号
+
+4. 执行
+	./a.out
+
+
+
+include<stdio.h>
+exec sql include sqlca;
+int main()
+{
+    char userpasswd[30]="openlab/open123";
+    char var_name[30];
+    exec sql connect:userpasswd;
+
+    exec sql select first_name into var_name
+        from s_emp where id=1;
+
+
+    exec sql commit work release;
+    printf("var_name=%s\n",var_name);
+
+}
+
+var_name=Apple
+--------------------------------------------------
+ 
+
+
+
+五. 宿主变量
+1. 概念
+	C语言：宿主语言
+	在宿主语言中定义的变量就是宿主变量。宿主变量的特点是既能在宿主语言中使用，又能在SQL语句中使用。
+
+2. 宿主变量的类型
+	char		字符类型
+	char var[n]	定长字符串
+	short		短整型
+	int		整型
+	long
+	float
+	double
+	varchar var[n]	变长字符串
+
+3.定长字符串和变长字符串
+	a. 定长字符串	数据不够长度时补空格
+	 	cp first.pc charn.pc
+
+
+  1 #include<stdio.h>
+  2 exec sql include sqlca;
+  3 int main()
+  4 {
+  5     char userpasswd[30]="openlab/open123";
+  6     char var_name[30];
+  7     exec sql connect:userpasswd;
+  8 
+  9     exec sql select first_name into var_name
+ 10         from s_emp where id=1;
+ 11 
+ 12 
+ 13     exec sql commit work release;
+ 14     printf("var_name=%s hello\n",var_name);
+ 15 
+ 16 }
+var_name=Apple                         hello
+--------------------------------------------------
+
+
+
+
+	b. 变长字符串
+	char 	varchar
+	
+	在select语句中，使用定长字符串和变长字符串没有区别
+	在宿主语言中使用变长字符串时，需要使用.arr把数据提取出来
+
+	变长字符串需要初始化，否则可能产生垃圾数据
+		可以使用零 初始化	varchar var_name[30]={0};
+
+
+  1 #include<stdio.h>
+  2 exec sql include sqlca;
+  3 int main()
+  4 {
+  5     char userpasswd[30]="openlab/open123";
+  6     varchar var_name[30]={0};
+  7     exec sql connect:userpasswd;
+  8 
+  9     exec sql select first_name into var_name
+ 10         from s_emp where id=1;
+ 11 
+ 12 
+ 13     exec sql commit work release;
+ 14     printf("var_name=%s hello\n",var_name.arr);
+ 15 
+ 16 }
+-----------------------------------------------------------------------
+
+
+	可以通过获取字符串长度，然后再在这个位置添加一个 '\0'   就可以不用初始化
+	varchar var_name[30];
+	var_name.len
+	var_name.arr
+	var_name只有两个属性  .arr提取数据  .len获取长度
+
+
+
+  1 #include<stdio.h>
+  2 exec sql include sqlca;
+  3 int main()
+  4 {
+  5     char userpasswd[30]="openlab/open123";
+  6     varchar var_name[30];      		--没有初始化
+  7     exec sql connect:userpasswd;
+  8 
+  9     exec sql select first_name into var_name
+ 10         from s_emp where id=1;
+ 11 
+ 12     var_name.arr[var_name.len]='\0';
+ 13 
+ 14     exec sql commit work release;
+ 15     printf("var_name=%s hello\n",var_name.arr);
+ 16 
+ 17 }
+
+var_name=Apple hello
+-------------------------------------------------------
+
+
+	
+	c.使用proc的预编译选项
+		oname  相当于gcc -o 
+		例如：proc charn.pc oname=my.c	生成my.c   --相当于重命名.c文件    不会再生成.pc同名的.c文件
+
+
+		proc charn.pc char_map=charz	处理字符串时处理成定长字符串 空格补齐 以'\0'结尾  默认方式
+
+		proc charn.pc char_map=varchar2|charf  处理字符串时处理成定长字符串 空格补齐 不以'\0'结尾
+
+		proc charn.pc char_map=string  	处理字符串时处理成变长字符串 以'\0'结尾
+
+------------------------------------------------------
+--proc charn.pc char_map=string
+--使用定长字符串方式  但加上预编译 结果就变了
+  1 #include<stdio.h>
+  2 exec sql include sqlca;
+  3 int main()
+  4 {
+  5     char userpasswd[30]="openlab/open123";
+  6     char var_name[30];
+  7     exec sql connect:userpasswd;
+  8 
+  9     exec sql select first_name into var_name
+ 10         from s_emp where id=1;
+ 11 
+ 12 
+ 13     exec sql commit work release;
+ 14     printf("var_name=%s hello\n",var_name);
+ 15 
+ 16 }
+
+var_name=Apple hello
+-------------------------------------------------------
+
+
+4. 宿主变量的使用注意事项
+	a. 宿主变量在sql语句中使用时，变量名前加冒号(:var_name)
+		如果不加冒号，当字段名和宿主变量重名时，可以能出错
+
+  1 #include<stdio.h>
+  2 exec sql include sqlca;
+  3 int main()
+  4 {
+  5     char userpasswd[30]="openlab/open123";
+  6     char var_name[30];
+  7     int id=3;
+  8     exec sql connect:userpasswd;
+  9     
+ 10     exec sql select first_name into :var_name
+ 11         from s_emp where id=:id;
+ 12 
+ 13     exec sql commit work release;
+ 14     printf("var_name=%s\n",var_name);
+ 15     
+ 16 }
+
+------------------------------------------------------------------
+
+	b.在ddl中不能使用宿主变量
+		exec sql drop table table_name;  --删除名字为table_name的表
+		exec sql drop table :table_name; --错误的
+
+	c.宿主变量可以是指针，但不推荐使用
+
+	d.宿主变量的定义，强烈推荐放入声明区
+		（c++,windows要求宿主变量必须放到声明区，为了兼容不同语言和系统，最好放入声明区）
+
+		exec sql begin declare section;
+		-- 声明区  放宿主变量的定义
+		exec sql end declare section;
+
+
+exec sql begin declare section;
+char userpasswd[30]="openlab/open123";
+char var_name[30];
+int id=3;
+exec sql end declare section;
+-----------------------------------------------
+
+
+练习：编写proc代码，从s_dept 表中查询并输出id=42的部门名称
+
+  1 #include<stdio.h>
+  2 exec sql include sqlca;
+  3 
+  4 int main()
+  5 {
+  6     exec sql begin declare section;
+  7      char userpasswd[30]="openlab/open123";
+  8      varchar dept[40]={0};
+  9      int id=42;
+ 10     exec sql end declare section;
+ 11     exec sql connect:userpasswd;
+ 12 
+ 13     exec sql select name into :dept
+ 14         from s_dept where id=:id;
+ 15 
+ 16     exec sql commit work release;
+ 17     printf("42.dept=%s\n",dept.arr);
+ 18 }
+
+42.dept=Operations
+
+--------------------------------------------------
+
+
+
+
+六. 指示变量
+1. 指示变量的作用
+	当数据库中的字段值，赋值给宿主变量时，赋值的状态可以通过指示变量获取
+
+	指示变量的取值：
+	 0	代表赋值正常
+	-1	代表数据库表中的字段值是 null 值
+	>0	代表是截断赋值 宿主变量的长度或精度无法存放下字段值
+
+
+2. 指示变量的用法
+	指示变量必须是short类型
+	short indid;
+	
+	第一种方式：
+		select id,first_name into :var_id:indid,:var_name
+			from s_emp where id=2；
+	宿主变量和指示变量之间可以有空格 一般不加
+
+	第二种方式：
+		select id,first_name into :var_id indicator :indid,:var_name    --在前面加 indicator 指示器
+			from s_emp where id=2；
+
+
+3. 把s_emp表中id=1的manager_id赋值给宿主变量，并用指示变量指示它的赋值状态
+
+  1 #include<stdio.h>
+  2 exec sql include sqlca;
+  3 
+  4 int main()
+  5 {
+  6     exec sql begin declare section;
+  7         char userpasswd[30]="openlab/open123";
+  8         int mid;		--mid 是 null
+  9         char name[30];
+ 10         /*定义指示变量manager_id的赋值状态*/
+ 11         short indmid;
+ 12     exec sql end declare section;
+ 13     exec sql connect:userpasswd;
+ 14     exec sql select first_name,manager_id into :name,:mid:indmid
+ 15             from s_emp where id=1;
+ 16     exec sql commit work release;
+ 17     printf("%s,%d,%hd\n",name,mid,indmid);
+ 18 
+ 19 }
+
+Apple                        ,134514953,-1
+----------------------------------------------------------------------
+
+
+
+七. 数组变量
+1. 数组变量使用的注意事项
+	a. 只能是一维数组  但字符除外
+		int ids[20];
+		char names[20][30];   --一个空间放30个字符 一共20个空间
+
+	b. 不支持数组指针
+	c. 最大元素个数32767
+	d. 在select语句中使用数组变量时，只能给出数组名，不能给下标
+	e. 如果要指示多个变量的赋值状态，可以使用指示变量数组
+
+2. 把s_emp表中的所有的manager_id和first_name分别放入两个数组中，并且用指示变量数组指示manager_id的赋值状态
+
+	sqlca.sqlerrd[2] --可以获取sql语句影响行数
+
+  1 #include<stdio.h>
+  2 exec sql include sqlca;
+  3 
+  4 int main()
+  5 {
+  6     exec sql begin declare section;
+  7         char userpasswd[30]="openlab/open123";
+  8         int mids[50];
+  9         char names[50][30];
+ 10         short indmids[50];
+ 11     exec sql end declare section;
+ 12     exec sql connect:userpasswd;
+ 13     exec sql select first_name,manager_id into :names,:mids:indmids
+ 14             from s_emp;
+ 15     exec sql commit work release;
+ 16 
+ 17     int i=0;
+ 18     for(i=0;i<sqlca.sqlerrd[2];i++)		--要不然会循环50次
+ 19     {
+ 20         printf("%s,%d,%hd\n",names[i],mids[i],indmids[i]);
+ 21     }
+ 22 
+ 23 }
+
+-------------------------------------------------------------------------
+
+
+
+八. sqlca通信区
+	作用：为了取得每个sql语句执行后的相关状态的说明，以便进行后续的错误的处理或跟踪
+	sqlca是oracle 的两个通信区之一
+	sqlca本质上是一个结构体
+	程序中每执行一条sql语句，就会把sqlca中的数据 更新一遍。所以要得到一条sql语句的执行信息，要立即获取，否则就会被下一条sql语句的状态覆盖
+	
+	sqlca.sqlerrd[2] --可以获取sql语句影响行数
+	sqlca.sqlcode 	 --sql的状态
+		==0 执行正常
+		 >0 执行出错 一般是违反约束
+		 <0 数据库系统出错 或者是网络错误
+
+	sqlca.sqlerrm.sqlerrmc	--得到sql错误的原因
+
+ 
+  1 #include<stdio.h>
+  2 exec sql include sqlca;
+  3 
+  4 int main()
+  5 {
+  6     exec sql begin declare section;
+  7         char userpasswd[30]="openlab/open123";
+  8         int mids[50];
+  9         char names[50][30];
+ 10         short indmids[50];
+ 11     exec sql end declare section;
+ 12     exec sql connect:userpasswd;
+ 13     if(sqlca.sqlcode==0)
+ 14     {
+ 15         printf("数据库连接成功！\n");
+ 16     }
+ 17     exec sql select first_name,manager_id into :names,:mids:indmids
+ 18             from s_emp;
+ 19     exec sql commit work release;
+ 20 
+ 21     int i=0;
+ 22     for(i=0;i<sqlca.sqlerrd[2];i++)
+ 23     {
+ 24         printf("%s,%d,%hd\n",names[i],mids[i],indmids[i]);
+ 25     }
+ 26
+ 27 }
+-------------------------------------------------------------------------------
+
+
+
+九. oraca通信区
+	对sqlca通信区的信息补充
+	可以获取执行的sql语句
+
+oraca的使用步骤：
+	1.包含oraca
+		exec sql include oraca;
+	2.打开oraca 
+		exec oracle option(oraca=yes);
+	3.设置oraca的保存标志
+		oraca.orastxtf
+				=0  默认 不保存sql
+				=1  当sql出错时保存sql
+				=2  sql出现警告时 或者出错时 保存sql
+				=3  无论什么情况都保存
+	4.得到sql文本
+		oraca.orastxt.orastxtc
+
+
+
+  1 #include<stdio.h>
+  2 exec sql include sqlca;
+  3 exec sql include oraca;
+  4 exec oracle option(oraca=yes);
+  5 
+  6 int main()
+  7 { 
+  8     exec sql begin declare section;
+  9 
+ 10         char userpasswd[30]="openlab/open123";
+ 11         int id=1; 
+ 12         char name[30];      
+ 13 
+ 14     exec sql end declare section;
+ 15 
+ 16         oraca.orastxtf=3;
+ 17 
+ 18     exec sql connect:userpasswd;
+ 19 
+ 20     exec sql select first_name into :name
+ 21             from s_emp where id=:id;
+ 22     printf("%s\n",oraca.orastxt.orastxtc);
+ 23 
+ 24     exec sql commit work release;
+ 25 
+ 26 } 
+
+
+select first_name into :b0  from s_emp where id=:b1
+----------------------------------------------------------
+
+
+作业：把s_dept表中的全部信息分别放入几个数组中，并且用指示变量数组指示region_id的赋值状态 循环输出
+	添加执行状态的判断 如果执行错误 输出错误信息
+
+ #include<stdio.h>
+  2 exec sql include sqlca;
+  3 
+  4 int main()
+  5 {
+  6     exec sql begin declare section;
+  7 
+  8         char userpasswd[30]="openlab/open123";
+  9         int ids[13];
+ 10         char names[13][30];
+ 11         int regid[13];
+ 12         short indregid[13]; 
+ 13     exec sql end declare section;
+ 14     exec sql connect:userpasswd;
+ 15 
+ 16     exec sql select id,name,region_id into :ids,:names,:regid:indregid
+ 17             from s_dept;
+ 18 
+ 19     if(sqlca.sqlcode!=0)
+ 20         printf("错误信息：%s\n",sqlca.sqlerrm.sqlerrmc);
+ 21 
+ 22     exec sql commit work release;
+ 23 
+ 24     int i=0;
+ 25     for(i=0;i<sqlca.sqlerrd[2];i++)
+ 26     { 
+ 27         printf("id=%d,name=%s,regid=%d,ind=%hd\n",ids[i],names[i],regid[i],i    ndregid[i]);
+ 28     }   
+ 29 } 
+
+结果：
+id=50,name=Administration               ,regid=1,ind=0
+id=10,name=Finance                      ,regid=1,ind=0
+id=41,name=Operations                   ,regid=1,ind=0
+id=42,name=Operations                   ,regid=2,ind=0
+id=43,name=Operations                   ,regid=3,ind=0
+id=44,name=Operations                   ,regid=4,ind=0
+id=45,name=Operations                   ,regid=5,ind=0
+id=31,name=Sales                        ,regid=1,ind=0
+id=32,name=Sales                        ,regid=2,ind=0
+id=33,name=Sales                        ,regid=3,ind=0
+id=34,name=Sales                        ,regid=4,ind=0
+id=35,name=Sales                        ,regid=5,ind=0
+id=110,name=Sales                        ,regid=0,ind=-1
+
+-------------------------------------------------------------------
+
+ #include<stdio.h>
+  2 exec sql include sqlca;
+  3 
+  4 int main()
+  5 {
+  6     exec sql begin declare section;
+  7 
+  8         char userpasswd[30]="openlab/open123";
+  9         int ids[50];
+ 10         char names[50][30];
+ 11         int regid[50];
+ 12         short indregid[50]; 
+ 13     exec sql end declare section;
+ 14     exec sql connect:userpasswd;
+ 15 
+ 16     exec sql select id,name,region_id into :ids,:names,:regid:indregid
+ 17             from s_dept;
+ 18 
+ 19     if(sqlca.sqlcode!=0)
+ 20         printf("错误信息：%s\n",sqlca.sqlerrm.sqlerrmc);
+ 21 
+ 22     exec sql commit work release;
+ 23 
+ 24     int i=0;
+ 25     for(i=0;i<sqlca.sqlerrd[2];i++)
+ 26     { 
+ 27         printf("id=%d,name=%s,regid=%d,ind=%hd\n",ids[i],names[i],regid[i],i    ndregid[i]);
+ 28     }   
+ 29 } 
+
+结果：
+错误信息：ORA-01403: no data found    --只有13个数据 用50去查询就会出现这样的错误
+                                             
+id=50,name=Administration               ,regid=1,ind=0
+id=10,name=Finance                      ,regid=1,ind=0
+id=41,name=Operations                   ,regid=1,ind=0
+id=42,name=Operations                   ,regid=2,ind=0
+id=43,name=Operations                   ,regid=3,ind=0
+id=44,name=Operations                   ,regid=4,ind=0
+id=45,name=Operations                   ,regid=5,ind=0
+id=31,name=Sales                        ,regid=1,ind=0
+id=32,name=Sales                        ,regid=2,ind=0
+id=33,name=Sales                        ,regid=3,ind=0
+id=34,name=Sales                        ,regid=4,ind=0
+id=35,name=Sales                        ,regid=5,ind=0
+id=110,name=Sales                        ,regid=0,ind=-1
+
+-------------------------------------------------------------------------
+总结：
+lclntsh
+LIBrary, CLieNT, SHared.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,762 @@
+关键字：继承
+
+一. 类的继承
+1. 继承的基本概念
+	1. 共性与个性
+	   第一级抽象：从对象的属性和行为到类
+		学生：姓名，年龄，学号，吃饭，睡觉，学习
+		教师：姓名，年龄，工资，吃饭，睡觉，授课
+
+	   第二级抽象：从不同的类型提取共同属性和行为
+		共性：类型间相同的属性和行为
+		个性：类型间不同的属性和行为
+			人：姓名，年龄，吃饭，睡觉——————基类（父类）
+		       /  \
+	 学生：学号，学习   教师：工资，授课      ——————子类（派生类）
+
+		站在 子类 上看 基类 是 继承
+		站在 基类 上看 子类 是 派生
+
+
+2. 继承的语法
+class 子类：继承方式1 基类1，继承方式2 基类2，...{...};
+	  |<-------------继承表--------------->|
+
+所有基类中的成员除了构造和析构函数以外都可以被子类所继承，无论是在子类内部还是在子类外部，只要所访问的基类成员不是私有成员，都可以和子类自身成员一样，直接访问。  ——————皆然性（一个子类对象就是一个基类对象(ISA)）
+
+继承方式：
+	public 		- 公有继承，最为常见
+	protected 	- 保护继承  \不多见
+	private 	- 私有继承  /应避免
+
+
+3. 公有继承
+	1. 逻辑层：子类即基类
+	2. 物理层：父类的子类对象是其父类子对象的父对象。
+
+
+#include<iostream>
+using namespace std;
+// 人类
+// /  \
+//学生教师
+
+class Human{
+private:
+	string m_name;
+	int m_age;
+public:
+	Human(string const& name,int age):
+		m_name(name),m_age(age){
+		cout<<"Human构造:"<<this<<' '<<sizeof(*this)<<endl;	
+		cout<<"m_name:"<<&m_name<<endl;				
+	 	cout<<"m_age:"<<&m_age<<endl;				
+	}
+
+	void who(void) const{
+		cout<<"我是"<<m_name<<",今年"<<m_age<<"岁。"<<endl;
+	}
+		
+	void eat(string const& food) const{
+		cout<<"我吃"<<food<<"。"<<endl;
+	}
+	void sleep(int hours) const{
+		cout<<"我睡"<<hours<<"小时。"<<endl;
+	}
+};
+
+class Student:public Human{
+private:
+	int m_no;
+public:
+	Student(string const& name,int age,int no):
+		Human(name,age),m_no(no) {				//Human构造:0xbfd4af78 8
+									//m_name:0xbfd4af78
+									//m_age:0xbfd4af7c
+		cout<<"student构造:"<<this<<' '<<sizeof(*this)<<endl;	//student构造:0xbfd4af78 12
+		cout<<"m_no:"<<&m_no<<endl;				//m_no:0xbfd4af80
+			
+	}    //继承：子类初始化表用基类的值，值是基类构造函数的对应值 Human(name,age)
+	
+	void learn(string const& course) const{
+		cout<<"我的学号是"<<m_no<<",我在学"<<course<<"."<<endl;
+	}
+};
+
+class Teacher:public Human{
+private:
+	int m_salary;
+public:
+	Teacher(string const& name,int age,int salary):
+		Human(name,age),m_salary(salary) {			//Human构造:0xbfd4af84 8
+									//m_name:0xbfd4af84
+									//m_age:0xbfd4af88
+		cout<<"teacher构造:"<<this<<' '<<sizeof(*this)<<endl;	//teacher构造:0xbfd4af84 12
+		cout<<"m_salary:"<<&m_salary<<endl;			//m_salary:0xbfd4af8c
+		
+	}
+
+	void teach(string const& course) const{
+		cout<<"我的工资"<<m_salary<<"，我教"<<course<<"。"<<endl;
+	}
+};
+int main(void)
+{
+	Student s("张飞",20,1001);
+	s.who();
+	s.eat("面条");
+	s.sleep(1);
+	s.learn("C++");
+
+	Teacher t ("杨健",40,10000);
+	t.who();
+	t.eat("米饭");
+	t.teach("标C");
+	return 0;
+}
+
+结果：	Human构造:0xbfd4af78 8
+	m_name:0xbfd4af78
+	m_age:0xbfd4af7c
+	student构造:0xbfd4af78 12
+	m_no:0xbfd4af80
+	我是张飞,今年20岁。
+	我吃面条。
+	我睡1小时。
+	我的学号是1001,我在学C++.
+	Human构造:0xbfd4af84 8
+	m_name:0xbfd4af84
+	m_age:0xbfd4af88
+	teacher构造:0xbfd4af84 12	//相对地址 跟在Human构造的后面
+	m_salary:0xbfd4af8c
+	我是杨健,今年40岁。
+	我吃米饭。
+	我的工资10000，我教标C。
+
+
+ 
+	3. 向下和向上造型
+		a.向上造型：把一个子类类型的指针或引用转换为其基类类型的指针或引用。
+		  向上造型在编译器看来是安全的，因此可以隐式完成。
+	
+		class Human { ... };
+		class Student : public Human { ... };
+		class Teacher : public Human { ... };
+		Student student (...);
+		Student* ps = &student;
+		Human* ph = ps; // 向上造型
+
+
+		b.向下造型：把一个基类类型的指针或引用转换为其子类类型的指针或引用。
+	          向下造型在编译器看来是有风险的，因此必须显式完成。(通过静态类型转换做显式转换)
+		
+		Human human (...);
+		Human* ph = &human;
+		Student* ps = ph; // 向下造型，编译失败
+
+
+		c.编译器对类型安全所做的检测，仅仅基于指针或引用本身的数据类型，而与其目标的实际类型无关。基类类型的指针或引用的实际目标对象的类型，究竟是否与需要转换的指针或引用的目标一致，完全由程序员自己判断。在确认安全性的前提下，可以通过个静态类型转换（static_cast<>）实现显式的向下造型。
+
+		Student student (...);
+		Human* ph = &student;	
+		Student* ps =static_cast<Student*>(ph)	//转换的指针与引用的目标一致
+
+
+	4. 保护成员
+		被 protected 访问控制属性约束的成员被称为类的保护成员，该成员仅可以被声明该成员的类及其子类访问。
+
+
+		  类内部  子类中  类外部  友元中
+	公有成员    ok      ok     ok      ok
+	保护成员    ok      ok     no      ok
+	私有成员    ok      no     no      ok
+
+
+
+#include<iostream>
+using namespace std;
+
+class A{
+public:
+	int m_pub;//公有成员
+protected:
+	int m_pro;//保护成员
+private:
+	int m_pri;//私有成员
+	void foo(void){
+		m_pub=10;
+		m_pro=10;
+		m_pri=10;
+	}
+	friend class D;
+};
+
+class B:public A{
+	void bar(void){
+		m_pub=10;
+		m_pro=10;
+//		m_pri=10;
+	}
+};
+
+class C{
+	void hum(A a){
+		a.m_pub=10;
+//		a.m_pro=10;
+//		a.m_pri=10;
+	}
+};
+
+class D{
+	void hum(A a){
+		a.m_pub=10;
+//		a.m_pro=10;
+//		a.m_pri=10;
+	}
+};
+int main()
+{
+	A a;
+	a.m_pub=10;
+//	a.m_pro=10;
+//	a.m_pri=10;
+	return 0;
+
+}
+
+
+
+	5. 区分隐藏和重载
+		a.只要子类中含有和基类中同名的标识符即构成名字隐藏（基类被隐藏），在不使用任何作用域限定的前提下，直接访问到的都是子类中的名字，通过作用域限定才可以访问到基类中的名称。
+
+	hide.cpp
+
+	B 同名 基类隐藏
+	C 构成隐藏
+	D 把A的作用域引到D 就构成重载
+	E 同名同参构不成重载  构成隐藏
+
+
+#include <iostream>
+using namespace std;
+class A {
+public:
+	void abc (void) {
+		cout << "A::abc()" << endl;
+	}
+};
+class B : public A {
+public:
+	int abc; // 隐藏
+};
+class C : public A {
+public:
+	void abc (int x) { // 隐藏
+		cout << "C::abc()" << endl;
+	}
+};
+class D : public A {
+public:
+	using A::abc;
+	void abc (int x) { // 重载
+		cout << "D::abc()" << endl;
+	}
+};
+class E : public A {
+public:
+	using A::abc;
+	void abc (void) { // 隐藏
+		cout << "E::abc()" << endl;
+	}
+};
+int main (void) {
+	B b;
+	b.abc = 10;
+	b.A::abc ();	//B 同名 基类隐藏
+	C c;
+	c.A::abc ();	//C 构成隐藏
+	c.abc (10);
+	D d;
+	d.abc ();
+	d.abc (10);	//D 把A的作用域引到D 就构成重载
+	E e;
+	e.abc ();
+	e.A::abc ();	//E 同名同参构不成重载  构成隐藏
+	return 0;
+}
+
+
+		b.基类和子类虽然存在派生和继承的逻辑关系，但它们毕竟是两个不同的类型，即各自拥有独立的作用域，因此即使是同名异参的成员函数也不能构成重载关系，除非通过using声明强制其同处于一个作用域中。
+
+
+
+
+4. 私有继承和保护继承
+	1. 继承方式对访问控制属性的影响
+		当通过一个子类类型的对象访问它从基类继承的成员时，不同的继承方式会影响该成员在子类中访问控制属性。
+
+		公有继承，成员在基类中的访控属性和子类中访控属性完全一致。
+		私有继承，基类中的所有成员在子类中都被视为私有成员。（在子类中认为基类的所有成员是子类的私有成员）
+		保护继承，基类中的公有成员在子类中被视为保护成员。
+
+
+
+class DCT { // $100
+public:
+    void codec (void) { ... }
+};
+class Jpeg : /*private*/protected DCT { // $1
+public:
+    void render (const char* jpgFile) {
+        ...
+        codec ();
+        ...
+     } 
+};
+class Jpeg2000 : public Jpeg {
+public:
+    void render (const char* jpgFile) {
+        ...
+        codec ();
+        ...
+     } 
+};
+Jpeg jpeg (...);
+jpeg.render ("sea.jpg");
+jpeg.codec (); // 报错
+
+
+私有继承：防止基类中的公有成员通过子类被扩散出去。
+保护继承：防止基类中的公有成员通过子类被扩散到继承链的外部，但是并不妨碍子类的子类继续访问。
+
+私有继承和保护继承在逻辑上不存在皆然性，即没有IsA的关系。因此无论哪种继承都不能隐式地向上造型。
+
+
+
+
+5. 子类的构造，析构，拷贝构造和拷贝赋值
+子类对象中包含了基类子对象，因此子类的构造，析构，拷贝构造和拷贝赋值，就必须同时兼顾其基类子对象的构造，析构，拷贝构造和拷贝赋值。
+
+	1. 子类的构造函数
+		a.隐式构造基类部分：如果子类的构造函数没有显式指明基类部分的构造方式，那么编译器会选择基类的缺省构造函数，构造该子类对象中基类子对象。这样做的前提就是基类中必须有缺省构造函数，否则将导致编译失败。
+
+
+subclass.cpp
+
+#include <iostream>
+using namespace std;
+class A {
+public:
+	A (int x = 123) : m_x (x) {			//没有这个缺省构造函数，将导致编译失败
+							//必须给int x赋初值
+		cout << "A构造：" << this << endl;
+	}
+	int m_x;
+};
+class B : public A {
+public:
+	// 隐式构造基类子对像
+	B (int y) : m_y (y) {
+		cout << "B构造：" <<  this << endl;
+	}
+	int m_y
+};
+
+int main (void) {
+	
+	B b (456);
+	cout << b.m_x << ' ' << b.m_y << endl;
+	
+	return 0;
+}
+
+结果：	A构造：0xbfdf2508
+	B构造：0xbfdf2508
+	123 456
+
+
+		b.显示构造基类部分：子类的构造函数可以在初始化表中显式指明基类部分的构造方式，即通过其基类的特定构造函数，构造该子类对象中的基类子对象。
+
+#include <iostream>
+using namespace std;
+class A {
+public:
+	A (int x = 123) : m_x (x) {
+		cout << "A构造：" << this << endl;
+	}
+
+	int m_x;
+};
+class B : public A {
+public:
+	// 隐式构造基类子对像
+	B (int y) : m_y (y) {
+		cout << "B构造：" <<  this << endl;
+	}
+
+	int m_y;
+};
+class C : public A {
+public:
+	// 显式构造基类子对象
+	C (int x, int z) : A (x), m_z (z) {
+//		A a (x); // 定义一个有名对象
+//		A (x);   // 定义一个匿名对象
+		cout << "C构造：" <<  this << endl;
+	}
+
+	int m_z;
+};
+class D : public B {
+public:
+	D (int x, int y, int z) : B (y),
+		m_c (x, z) {
+		cout << "D构造：" << this << endl;
+	}
+
+	C m_c;
+};
+int main (void) {
+	
+	B b (456);
+	cout << b.m_x << ' ' << b.m_y << endl;
+	C c (111, 222);
+	cout << c.m_x << ' ' << c.m_z << endl;
+	cout << "-----------------" << endl;
+
+	D d (333, 444, 555);
+	cout << sizeof (d) << endl; // 16
+	cout << "-----------------" << endl;
+
+	return 0;
+}
+
+结果：	A构造：0xbff8f350
+	B构造：0xbff8f350
+	123 456
+	A构造：0xbff8f358
+	C构造：0xbff8f358
+	111 222
+	-----------------
+	A构造：0xbff8f340	//B里的A 跟B地址一样
+	B构造：0xbff8f340	
+	A构造：0xbff8f348	//C里的A 跟C地址一样
+	C构造：0xbff8f348
+	D构造：0xbff8f340	// D里有 B和C  B里有A  C里有A
+	16
+	-----------------
+
+		c.子类对象的构造过程：子类的构造函数执行如下步骤
+			a.首先，按照继承表的顺序，依次调用各个基类的构造函数，构造子类对象中的基类子对象；
+			b.其次，按照声明的顺序，依次调用各个类 类型成员变量相应类的构造函数，构造子类对象中的成员子对象；
+			c.最后，执行子类构造函数体中的代码，完成整个构造过程。
+
+
+	A构造：0xbff8f340	//B里的A 跟B地址一样
+	B构造：0xbff8f340	
+	A构造：0xbff8f348	//C里的A 跟C地址一样
+	C构造：0xbff8f348
+	D构造：0xbff8f340	// D里有 B和C  B里有A  C里有A
+	16
+	-----------------
+
+	2. 子类的析构函数
+		a.子类的析构函数，无论是自己定义的，还是编译器提供的，在执行完其中的析构代码，并析构完所有的类类型成员子对象以后会自动调用其基类的析构函数，析构该子类对象中基类子对象，析构的顺序和构造的顺序一定是严格对称的。
+
+
+#include <iostream>
+using namespace std;
+class A {
+public:
+	A (int x = 123) : m_x (x) {
+		cout << "A构造：" << this << endl;
+	}
+	~A (void) {
+		cout << "A析构：" << this << endl;
+	}
+	int m_x;
+};
+class B : public A {
+public:
+	// 隐式构造基类子对像
+	B (int y) : m_y (y) {
+		cout << "B构造：" <<  this << endl;
+	}
+	~B (void) {
+		cout << "B析构：" << this << endl;
+	}
+	int m_y;
+};
+class C : public A {
+public:
+	// 显式构造基类子对象
+	C (int x, int z) : A (x), m_z (z) {
+//		A a (x); // 定义一个有名对象
+//		A (x);   // 定义一个匿名对象
+		cout << "C构造：" <<  this << endl;
+	}
+	~C (void) {
+		cout << "C析构：" << this << endl;
+	}
+	int m_z;
+};
+class D : public B {
+public:
+	D (int x, int y, int z) : B (y),
+		m_c (x, z) {
+		cout << "D构造：" << this << endl;
+	}
+	~D (void) {
+		cout << "D析构：" << this << endl;
+	}
+	C m_c;
+};
+int main (void) {
+	
+	D d (333, 444, 555);
+	cout << sizeof (d) << endl; // 16
+	cout << "-----------------" << endl;
+
+	return 0;
+}
+
+结果：	A构造：0xbfeadeb0
+	B构造：0xbfeadeb0
+	A构造：0xbfeadeb8
+	C构造：0xbfeadeb8
+	D构造：0xbfeadeb0
+	16
+	-----------------	//析构的顺序和构造的顺序一定是严格对称的。
+	D析构：0xbfeadeb0
+	C析构：0xbfeadeb8	//析构完子类型 再析构子类中的基类型
+	A析构：0xbfeadeb8
+	B析构：0xbfeadeb0
+	A析构：0xbfeadeb0
+
+		b.对一个指向子类对象的基类指针使用delete操作符，实际被调用的将是基类的析构函数，该函数不会调用子类的析构函数，其所析构的仅仅是子类对象中基类子对象，而子类的扩展部分极有可能因此而形成内存泄漏。
+		实践中可以通过静态类型转换对基类指针做向下类型转换，解决此问题。
+
+
+#include <iostream>
+using namespace std;
+class A {
+public:
+	A (int x = 123) : m_x (x) {
+		cout << "A构造：" << this << endl;
+	}
+	~A (void) {
+		cout << "A析构：" << this << endl;
+	}
+	int m_x;
+};
+class B : public A {
+public:
+	// 隐式构造基类子对像
+	B (int y) : m_y (y) {
+		cout << "B构造：" <<  this << endl;
+	}
+	~B (void) {
+		cout << "B析构：" << this << endl;
+	}
+	int m_y;
+};
+class C : public A {
+public:
+	// 显式构造基类子对象
+	C (int x, int z) : A (x), m_z (z) {
+//		A a (x); // 定义一个有名对象
+//		A (x);   // 定义一个匿名对象
+		cout << "C构造：" <<  this << endl;
+	}
+	~C (void) {
+		cout << "C析构：" << this << endl;
+	}
+	int m_z;
+};
+class D : public B {
+public:
+	D (int x, int y, int z) : B (y),
+		m_c (x, z) {
+		cout << "D构造：" << this << endl;
+	}
+	~D (void) {
+		cout << "D析构：" << this << endl;
+	}
+	C m_c;
+};
+int main (void) {
+
+/*
+	B* pb = new B (456);	
+	delete pb;
+	
+	结果：	A构造：0x9008008
+		B构造：0x9008008   这样不会造成内存泄漏  因为是指向子类的子类指针
+		B析构：0x9008008
+		A析构：0x9008008
+*/
+
+/*
+	A* pb = new B (456);
+	delete pb;
+
+	结果：	A构造：0x8050008
+		B构造：0x8050008   这样会造成内存泄漏 没有析构B  因为是 指向子类的基类指针
+		A析构：0x8050008
+
+*/
+
+	A* pa = new B (456);
+	delete static_cast<B*> (pa);	//通过静态转换 向下造型  将A基类类型指针 转换为 B子类类型指针
+	return 0;
+}
+
+结果：	A构造：0x9720008
+	B构造：0x9720008
+	B析构：0x9720008
+	A析构：0x9720008
+
+	3. 子类对象的拷贝
+		a.如果子类没有定义拷贝构造或拷贝赋值函数，那么编译器会为子类提供缺省拷贝构造或拷贝赋值函数，该函数会自动调用其基类的拷贝构造或拷贝赋值函数，去拷贝子类对象中的基类子对象。
+
+		b.如果子类定义了拷贝构造或拷贝赋值函数，但是没有显式指明基类子对象的拷贝方式，那么编译器要么以缺省方式初始化该子对象，要么令该子对象保持原状，均无法获得完整意义上的子对象副本。		
+
+		c.如果子类定义了拷贝构造或拷贝赋值函数，同时也显式指明基类子对象的拷贝方式，那么子对象中基类部分和扩展部分将被一起复制，最终得到完整意义上的子类对象副本。
+
+copy.cpp
+
+#include <iostream>
+using namespace std;
+class A {
+public:
+	A (int x = 0) : m_x (x) {}
+
+	int m_x;
+};
+class B : public A {
+public:
+	B (int x = 0, int y = 0) :
+		A (x), m_y (y) {}
+
+	B (B const& b) : A (b), m_y (b.m_y) {} //不定义 编译器自动给定义   注意不能少基类的赋值  A(b)
+
+	B& operator= (B const& b) {	
+		A::operator= (b);	//不定义 编译器自动给定义 注意不能少基类的赋值  A::operator=(b)
+		m_y = b.m_y;
+		return *this;
+	}
+	int m_y;
+};
+int main (void) {
+	B b1 (100, 200);
+	cout << b1.m_x << ' ' << b1.m_y << endl;	//100 200
+	B b2 = b1; // 拷贝构造
+	cout << b2.m_x << ' ' << b2.m_y << endl;	//100 200
+	B b3 (123, 456);
+	cout << b3.m_x << ' ' << b3.m_y << endl;	//123 456
+	b2 = b3; // 拷贝赋值
+	cout << b2.m_x << ' ' << b2.m_y << endl;	//123 456
+	return 0;
+}
+
+
+
+
+
+
+
+
+//作业：增加下标操作符，矩阵对象可以通过类似二维数组的方式访问指定行列的元素
+
+89     //[]
+ 90     int* operator[] (int i){
+ 91         return m_a[i];
+ 92     }
+ 93     int const* operator[] (int i) const{
+ 94         return const_cast<M33&>(*this)[i];
+ 95     }
+
+
+122     ++m2[1][1];
+123 //  ++m2.operator[](1)[1]
+124     cout<<m2<<endl;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

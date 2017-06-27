@@ -1,0 +1,412 @@
+﻿User	FIQ	IRQ	SVC	Undef	Abort
+System
+r0	User	User	User	User	User
+r1	mode	mode	mode	mode	mode
+r2	r0-r7	r0-r12	r0-r12	r0-r12	r0-r12
+r3	r15	r15	r15	r15	r15
+r4	and	and	and	and	and
+r5	cpsr	cpsr	cpsr	cpsr	cpsr
+r6		
+r7
+r8	r8
+r9	r9
+r10	r10
+r11	r11
+r12	r12
+r13(sp)	r13(sp)	r13(sp)	r13(sp)	r13(sp)	r13(sp)
+r14(lr)	r14(lr)	r14(Ir)	r14(Ir)	r14(Ir)	r14(Ir)
+r15(pc)	共用	共用	共用	共用	共用
+cpsr	共用	共用	共用	共用	共用
+	spsr	spsr	spsr	spsr	spsr	
+	
+     |			      |
+     |			      |	
+0x1c | FIQ 		      |	
+0x18 | IRQ		      |	
+0x14 | (Reserved)	      |
+0x10 | Data Abort             |
+0x0c | Prefetch Abort         |
+0x08 | Software Interrupt     |
+0x04 | Undefined Instruction  |
+0x00 | Reset		      |
+     __________________________
+	   Vector Table	
+
+
+	.text		@代码段的起始
+	.code 32
+	.global
+start:
+	mov r0, #10
+	ldr r1,	=3
+	add r0, r0, r1
+	b .
+	.end
+
+
+CMP r3, #0
+ADDNE r0, r1, r2
+
+CMP r0, #0
+ADDEQ r1, r1, #1
+ADDNE r2, r2, #1
+
+Loop:
+ 	...
+	SUBS r1, r1, #1
+	BNE loop
+
+
+
+回顾:
+面试题：谈谈对ARM处理器的认识
+1.ARM概念
+  公司
+  处理器架构,类似X86
+  	常见的嵌入式处理器：
+  	ARM
+  	Powerpc
+  	MIPS
+  	DSP+ARM核
+  	FPGA+ARM核
+  	低端单片机(51)
+  回忆：嵌入式系统概念
+  	以用户需求为中心,满足用户的基本需求
+  	软件和硬件可以进行裁剪(可以加也可以减)
+  	     本质：硬件依赖用户需求
+  	           软件依赖硬件
+  	功能合适即可
+  	可靠性要好
+  	体积？
+  	功耗要低
+  	成本要合理
+  	一定要举例子：以iphone手机和诺基亚的5230(低端)
+  		      为例,进一步说明概念
+   常见ARM处理器的芯片厂家
+   
+2.ARM核版本划分
+  明确：ARM核由ARM公司设计,各个芯片厂家根据IP授权造处理器
+  大版本和小版本
+  例如：S5PV210:
+  	        某款处理器,三星
+  	        CORTEX-A8
+  	        ARMV7
+
+3.ARM指令流水线
+  ARM7之前采用3级流水线：取指F->解码D->执行E
+  画出一个3级流水线的处理示意图
+  
+  ARM9以后采用5级流水线：取指F->解码D->执行E->访存M->写回W
+  					    并不是所有的指令都有M
+  					    但是这个动作必须要有  	   
+  画出一个5级流水线的处理示意图
+  
+4.ARM的7种工作模式
+  明确：中断机制
+        产生的根本：外设的处理速度远远慢于CPU
+        可以考虑使用轮询方式(死等)
+        也可以考虑使用中断机制
+  场景				CPU工作模式
+  复位或者代码调用svc指令       SVC管理模式
+  外设给CPU发送FIQ中断信号      FIQ快速中断模式
+  外设给CPU发送IRQ中断信号      IRQ中断模式
+  切记：外设产生的中断电信号不是直接给CPU核,这个中断电信号
+        一定要先到达中断控制器,由中断控制器来决定将来这个
+        中断电信号以什么样的方式(FIQ/IRQ)发给CPU核
+  访问地址或者数据不合法	Abort终止模式
+        *(int *)0 = 0;  //给空指针赋0
+  CPU执行一个不认识的指令       未定义指令模式
+  应用程序正常运行时		User模式
+                                System模式
+                                
+5.ARM的2个工作状态
+  ARM状态：
+  	CPU执行的指令为ARM指令,宽度32位
+  Thumb状态：
+  	CPU执行的指令为Thumb指令,宽度16位
+  注意：CPU在两个状态的切换只需执行执令BX即可
+        例如：
+        BX  地址
+        地址[0] = 1:CPU进入Thumb状态
+        	BX 0x20008001
+        地址[0] = 0:CPU进入ARM状态
+        	BX 0x20008000
+        
+6.ARM核寄存器的组织方式
+  明确：一款处理器不仅仅包括ARM核(CPU核),还包括一大堆的
+        控制器(控制器里面又有一堆的寄存器)
+  控制器里面的一堆寄存器又称特殊功能寄存器,这些寄存器的访问
+  通过地址指针的形式访问；
+  ARM核内部同样包含了一大堆的寄存器,又称ARM寄存器,这些寄存器的
+  访问通过名字访问即可  
+  不管是什么寄存器,它们的作用都是一样,用来暂存数据
+  
+  6.1.ARM的37个寄存器
+      通用寄存器：
+      r0~r15:通用
+      r15=pc:永远保存取指指令的地址,只有一个
+      r14=lr:保存返回地址
+      r13=sp:保存栈指针
+      FIQ模式有单独自己的r8~r14
+      IRQ,SVC,Abort,Undef有单独自己的r13和r14
+      寄存器在使用时,通过名字来区分,注意不区分大小写！
+      
+      程序状态寄存器：cpsr,只有一个
+      		例如：
+      		int a = 1;
+      		int b = a  - 1; //程序的运算结果b=0
+      		将来会根据运算结果b影响cpsr,也就是cpsr
+      		保存的b的运算结果,例如结果为0
+      		
+      保存程序状态寄存器：spsr,除了system和user其余模式都有单独的spsr
+      	                  当CPU发生模式切换时,CPU会自动将
+      	                  cpsr的值保存在spsr,将来再切换回去,
+      	                  再将spsr恢复到cpsr
+
+User	FIQ	IRQ	SVC	Undef	Abort
+System
+r0	User	User	User	User	User
+r1	mode	mode	mode	mode	mode
+r2	r0-r7	r0-r12	r0-r12	r0-r12	r0-r12
+r3	r15	r15	r15	r15	r15
+r4	and	and	and	and	and
+r5	cpsr	cpsr	cpsr	cpsr	cpsr
+r6		
+r7
+r8	r8
+r9	r9
+r10	r10
+r11	r11
+r12	r12
+r13(sp)	r13(sp)	r13(sp)	r13(sp)	r13(sp)	r13(sp)
+r14(lr)	r14(lr)	r14(Ir)	r14(Ir)	r14(Ir)	r14(Ir)
+r15(pc)	共用	共用	共用	共用	共用
+cpsr	共用	共用	共用	共用	共用
+	spsr	spsr	spsr	spsr	spsr	
+
+      	                  
+     重点关注CPSR程序状态寄存器：保存程序的运行状态
+     BIT[4:0]:保存CPU的工作模式
+     BIT[5]:保存CPU的工作状态
+            =1：THumb状态
+            =0：ARM状态
+     BIT[6]:禁止或者使能FIQ
+            =1：禁止CPU核相应FIQ中断
+            =0：让CPU相应FIQ中断
+     BIT[7]:禁止或者使能IRQ
+            =1：禁止CPU核相应IRQ中断
+            =0：让CPU相应IRQ中断
+     BIT[28]:保存程序运算的结果是否发生过溢出
+            =1:溢出
+            =0:没溢出
+            V位 溢出标志oVerflow
+     BIT[29]:保存程序运算的过程是否发生过进位或者借位
+            =1:发生过
+            =0:没有
+            C位 进位或借位扩展Carry
+     BIT[30]:保存程序运算的结果是否为0
+            =1：运算的结果为0
+            =0: 结果不为0
+            Z位 零Zero
+     BIT[31]:保存程序运算的结果是否是负数或者小于
+            =1:负数或者小于
+            =0:正数或者大于
+            N位 负或小于Negative
+     结果：N,Z,C,V又称条件标志位
+     切记：指令后面加S,程序的运算结果会影响N,Z,C,V
+     例如：
+     add r0, r0, r1 //即使r0的结果为0,也不会影响cpsr
+     adds r0, r0, r1 //将来r0的结果会影响cpsr  
+     
+7.ARM的7种异常
+  “异常”：事件的发生具有随机性
+  7.1.7种异常
+  1.Reset复位异常
+    当按复位键,系统重启时触发,一旦发生复位异常,CPU硬件自动
+    跳转到0x00地址去“运行”(取指,解码,执行)
+  2.undefine未定义指令异常
+    CPU执行一个不认识的指令时触发,一旦发生这种异常,CPU硬件
+    自动跳转到0x04地址去运行
+  3.软中断异常
+    软件代码调用svc指令时触发,一旦触发这种异常,CPU硬件自动
+    跳转到0x08地址去运行
+  4.预取异常
+    当CPU访问某个地址或者指令非法(权限不够),一旦发生这种
+    异常,CPU硬件自动跳转到0x0c地址去运行
+  5.数据异常
+    当CPU处理数据时（权限不够）触发,CPU硬件自动跳转到
+    0x10地址去运行
+  6.IRQ异常
+    当CPU接收到IRQ中断信号时触发,CPU硬件自动跳转到
+    0x18地址与运行
+  7.FIQ异常
+    当CPU接收到IRQ中断信号时触发,CPU硬件自动跳转到
+    0x1C地址与运行   
+    
+     |			      |
+     |			      |	
+0x1c | FIQ 		      |	
+0x18 | IRQ		      |	
+0x14 | (Reserved)	      |
+0x10 | Data Abort             |
+0x0c | Prefetch Abort         |
+0x08 | Software Interrupt     |
+0x04 | Undefined Instruction  |
+0x00 | Reset		      |
+     __________________________
+	   Vector Table	
+
+
+ 7.2.异常处理
+ 明确：一旦异常发生了,CPU必须要响应和处理异常,ARM核处理
+ 异常的步骤：
+ ARM核硬件将要做以下动作：
+ 1.将cpsr的值备份到对应模式下的spsr
+   spsr_mode = cpsr
+ 2.设置cpsr相关的状态
+   bit[4:0]设置为对应的模式
+   bit[5]设置为0,切换到ARM状态
+   bit[6]设置为1,禁止FIQ
+   bit[7]设置为1,禁止IRQ
+ 3.将下一条指令的地址保存在对应模式的lr中
+   将来便于返回
+ 4.设置PC的值,让PC执行对应异常的处理入口地址
+   例如,如果是IRQ中断异常,PC=0x18,也就代表着让CPU跑到
+   0x18地址去运行
+ 5.一旦PC指向某个异常处理的入口地址,后序的事情都是
+   软件来实现,具体里面做什么事,完全由你来决定
+ 
+ 6.异常一旦处理完毕,最终面临要返回的命运,返回处理
+   不能是由硬件完成,而是软件操作返回，软件只需做两件事：
+   1.从spsr_mode恢复cpsr
+     cpsr=spsr_mode 
+   2.从lr_mode恢复pc
+     pc=lr_mode(保存原先指令地址) 
+     
+  7.3.异常向量表
+  异常向量表：就是将你自己写的一个函数地址分别放在7个异常
+  对应的处理入口地址,将来一旦异常发生了,CPU最终调用执行
+  对应的函数！此向量表格式由ARM公司定死,由软件编程实现！
+  画出异常向量表 
+  
+8.ARM的数据类型
+  字节  8位
+  半字  16位
+  字    32位
+  双字  64位
+  内存对齐：字节,半字和字对齐
+  笔试题：
+  struct Stu{
+  	char a;
+  	int b;
+  	char c;
+  };	       
+  请问：sizeof(struct Stu) = ?
+  
+  笔试题：编程实现判断当前处理器是大端模式还是小端模式？
+
+9.ARM汇编编程框架
+  9.1.参考代码：
+      .text  @代码段的起始
+      .code 32 @采用ARM指令 也可以写 .arm
+
+      .global  start @声明一个全局标号,名称为start
+start : @标号起始
+        mov  r0,  #10	@r0=10
+        ldr    r1,  =3  @r1=3
+        add   r0,  r0,  r1 @r0=r0+r1=10+3=13
+        b       .  @while(1);
+       .end  @代码段的结束
+     
+    切记：PC的值是如何变化的,通过一下三条指令,掌握PC寄存器
+    	指令内存地址   指令
+    	0x8000         mov  r0,  #10	@r0=10
+        0x8004         ldr    r1,  =3  @r1=3
+        0x8008         add   r0,  r0,  r1 @r0=r0+r1=10+3=13
+        问：当mov指令执行的时候,PC寄存器的值为？
+        答：明确：PC寄存器就是流水线中的"监工",永远指向取指
+            当mov指令执行的时候,PC=0x8008,这个赋值过程由硬件
+            自动完成
+        问：如果已知PC,问执行指令的地址为？
+            执行指令的地址=PC-8 
+            
+  9.2.影响CPSR条件标志位N,Z,C,V的情形
+  1.指令后面加S,指令的运算结果会影响CPSR的N,Z,C,V
+    mov r0, #1
+    sub r0, r0, #1 @即使运算的结果r0=0,也不会影响cpsr的Z位
+    或者
+    subs r0, r0, #1 @运算的结果r0=0,势必影响cpsr的Z位=1
+  2.特例：cmp指令,这条指令不加S也会影响cpsr的Z位
+    cmp r0, #0
+    addeq r0,r0,#1 @add执行的前提是r0和0比较的结果相等
+    subne r0,r0,#1 @sub执行的前提是r0和0比较的结果不相等
+  
+  案例：编写汇编代码,实现两个数相加
+  实施步骤：
+  1.在linux虚拟机中安装qemu-arm模拟器
+    1.1.从ftp下载qemu.rar安装包
+    1.2.windows解压缩,把qemu拷贝到linux虚拟机中
+
+	sudo chown tarena /opt -R
+	sudo chgrp tarena /opt -R
+	将/opt目录的用户和组改为tarena用户和tarena组
+
+        cp qemu /opt/ -frd
+    1.3.安装qemu
+        cd /opt/qemu
+        sudo dpkg -i *
+  2.编写汇编代码,实现两个数的加或者减
+    mkdir /opt/arm/day09/1.0 -p
+    cd /opt/arm/day09/1.0
+    vim do_sub.s //汇编文件都是以.s结尾 添加如下内容：
+    .text @代码段
+    .code 32
+    .global _start
+    _start:
+    	mov r0, #0
+    	mov r1, #9
+    	mov r2, #2
+    	sub r0, r1, r2 @r0 = r1 - r2
+        b . @while(1)
+        .end @结束
+    保存退出
+    编译：
+    arm-linux-as -g -o do_sub.o do_sub.s
+    			    -g:添加调试信息
+    arm-linux-ld -o do_sub do_sub.o
+    		    do_sub就是二进制可执行文件
+  
+  3.利用qemu-arm和arm-linux-gdb调试器运行do_sub
+    在虚拟机中开一个终端,输入：
+    cd /opt/arm/day09/1.0
+    qemu-arm -g 1234 do_sub //-g 1234:指定端口号为1234
+    
+    再虚拟机中打开一个终端,输入：
+    cd /opt/arm/day09/1.0
+    arm-linux-gdb do_sub //开始运行do_sub程序
+    此时此刻会出现(gdb)提示符,接着输入：
+    (gdb)target remote localhost:1234
+    开始利用gdb的命令调试do_sub，接着输入：
+    (gdb)l  //list查看代码命令
+    (gdb)b 行号 //在对应的某行设置一个断点
+    (gdb)s  //下一步,如果有子函数,将会进入子函数去跟踪代码执行
+    或者
+    (gdb)c  //也是下一步,如果有子函数,不会进入子函数去跟踪代码执行		    
+    (gdb)info reg //查看ARM所有寄存器的值
+                    打印r0,r1,r2...cpsr,spsr的值
+    (gdb)quit //退出arm-linux-gdb
+                    
+  案例：编写汇编代码,实现1+2+3+...+10  
+
+	.text
+	.code 32
+	.global _start
+_start:
+	mov r0, #0
+	mov r1, #10
+sum:
+	add r0, r1, r0
+	sub r1, r1, #1
+	cmp r1, #0
+	blne sum
+.end

@@ -1,0 +1,438 @@
+关键字：约束 
+
+/*3.4 约束*/
+	对数据库表中的字段进行限制
+
+1. 具体的约束类型
+	1.主键约束 primary key
+		添加主键约束默认：不允许重复（值是唯一的）  非空
+		一个表中只能有一个主键约束
+	
+	2.唯一约束 unique
+		不允许重复
+		一个表中可以存在多个唯一约束
+
+	3.检查约束 check
+		值必须符合检查条件
+
+	4.非空约束 not null
+		不允许为空
+
+	5.外键约束 foreign key references
+		表之间的关系
+		一个表中的某个字段的值必须来自于另一张表某个字段的值或者为null
+
+2. 实现约束的方式
+	1.列级约束
+		约束直接在字段后添加
+	2.表级约束
+		表中的所有字段都定义完后，用逗号隔开在最后添加
+
+
+	1.主键约束
+		a.系统自动提供约束名 列级约束
+
+		create table testcons_wkw(
+			id number primary key,
+			name varchar2(25)
+		);
+		
+		insert into testcons_wkw values(1,'test1');
+
+
+
+		--insert into testcons_wkw values(1,'test1');
+
+		insert into testcons_wkw values(1,'test1')
+		*
+		ERROR at line 1:
+		ORA-00001: unique constraint (OPENLAB.SYS_C0011467) violated
+				 --如果没有给主键约束命名，系统会自动提供一个约束名 SYS_C0011467
+
+
+
+
+		--insert into testcons_wkw values(null,'test1');
+
+		insert into testcons_wkw values(null,'test1')
+				                *
+		ERROR at line 1:
+		ORA-01400: cannot insert NULL into ("OPENLAB"."TESTCONS_WKW"."ID")
+
+
+
+
+		b.自己给约束起名字（列级约束）
+			字段名 数据类型 constraint 约束名 约束类型
+
+
+		create table testcons_wkw(
+			id number constraint testcons_wkw_id_pk primary key,
+			name varchar2(25)
+		);
+
+
+
+		insert into testcons_wkw values(1,'test1')
+		*
+		ERROR at line 1:
+		ORA-00001: unique constraint (OPENLAB.TESTCONS_WKW_ID_PK) violated
+
+
+
+
+		c.表级主键约束
+
+		create table testcons_wkw(
+			id number,
+			name varchar2(25),
+			primary key(id)
+		);
+
+
+		联合主键（把多个字段联合起来做主键） 只能通过表级方式来实现
+		create table testcons_wkw(
+			id number,
+			user_id number,
+			name varchar2(25),
+			primary key(id,user_id)
+		);
+
+		insert into testcons_wkw values(1,1,'test1');
+		insert into testcons_wkw values(1,2,'test1');
+		insert into testcons_wkw values(2,1,'test1');
+		insert into testcons_wkw values(2,2,'test1');  
+		以上都可以 
+		只有在两个都相同时才出错
+		insert into testcons_wkw values(1,1,'test1'); 
+
+
+	2.唯一，非空，检查约束
+		非空约束没有表级实现
+		
+		create table testcons_wkw(
+			id number primary key,
+			user_id varchar2(20) unique,
+			name varchar2(25) not null,
+			salary number(11,2) check(salary>=1720)
+		);
+
+
+		--insert into testcons_wkw values(1,'22123365','test1',1700);
+
+		insert into testcons_wkw values(1,'22123365','test1',1700)
+		*
+		ERROR at line 1:
+		ORA-02290: check constraint (OPENLAB.SYS_C0011533) violated
+
+
+
+		insert into testcons_wkw values(1,'22123365','test1',1800);
+		insert into testcons_wkw values(2,'22123365','test2',1900);
+	
+		insert into testcons_wkw values(2,'22123365','test2',1900)
+		*
+		ERROR at line 1:
+		ORA-00001: unique constraint (OPENLAB.SYS_C0011535) violated
+
+
+
+		唯一，检查约束的表级约束
+
+		create table testcons_wkw(
+		id number primary key,
+		user_id varchar2(20),
+		name varchar2(25) not null,
+		salary number(11,2),
+
+		constraint testcons_wkw_user_id_un unique(user_id),
+		constraint testconts_wkw_sal_ck check(salary>=1720)
+		);
+		
+		如果使用的是联合主键，联合唯一，检查约束中涉及多个字段这几种情况，需要使用表级约束。
+
+
+	3.外键约束
+		1.概念：一个表的字段值，要受限于另一张表的字段值
+		主表（父表）：字段被引用的表
+		从表（子表）：定义了外键约束（数据来源于主表对应的字段值，或者为null）
+		
+		2.建表
+		  先创建主表，再创建从表
+		  除非在创建表时不考虑外键约束，在表创建完成后添加
+
+		create table parent_wkw(
+			id number primary key,
+			name varchar2(25) not null
+		);
+
+		create table child_wkw(
+			id number primary key,
+			name varchar(25) not null,
+			parent_id number constraint Child_parent_id_Parent_id_fk references parent_wkw(id)
+		);
+
+
+		3.插入数据
+		  先向主表写入数据，再向从表写入
+		  或者从表中外键值设置为 null
+			insert into child_zsm_00 values(1,'test1',1);--违反约束
+   			insert into parent_zsm_00 values(1,'Sales');
+   	   		insert into child_zsm_00 values(1,'test1',1);
+    	  		insert into child_zsm_00 values(2,'test1',null);
+
+
+      		4.删除或修改时，不能 造成子表中数据孤立
+		      delete from parent_zsm_00 where id=1;
+		      update parent_zsm_00 set id=2 where id=1;
+		      update child_zsm_00 set pid=2 where pid is null;
+		      上面三条语句都违反了约束，无法执行
+
+
+		5.删除表
+		  先删除子表，后删除主表
+		  drop table child_wkw;
+		  drop table parent_wkw;
+	
+		  先去掉约束，再删除表
+		  drop table 表名 cascade constraints;
+		
+		删除主表  先删主表也没问题
+		  drop table parent_wkw cascade constraints;
+		  drop table child_wkw cascade constraints;
+
+
+		6.级联删除和级联置空  cascade
+		  a.级联删除：on delete cascade
+
+		  create table parent_wkw(
+			id number primary key,
+			name varchar2(25) not null
+		  );
+
+		  create table child_wkw(
+			id number primary key,
+			name varchar(25) not null,
+			parent_id number,
+			foreign key(parent_id) constraint Child_parent_id_Parent_id_fk references parent_wkw(id) on delete cascade  --添加级联删除 删除父表中关联数据时，子表里相关数据也会被删除
+		  );
+
+		  b.级联置空：on delete set null
+		    --删除父表中关联数据时，子表里相关数据会被置空
+
+
+
+/*四. 数据库的其他对象和分页*/
+
+/*4.1 数据库的其他对象*/
+1. 序列（用来产生主键的值）（oracle里这样的）
+	sequence
+
+	create table testseq_wkw(
+		id number primary key,
+		name varchar2(20) not null
+	);
+
+	1.建立序列的语法
+	  create sequence 序列名;
+
+	create sequence testseq_wkw_id;
+
+
+	2.使用序列 主键的最大值 10^27
+	  currval：当前值
+	  nextval：下一个值
+	  至少使用过一次nextval以后，才能使用currval
+	  序列名.nextval   序列名.currval
+
+	insert into testseq_wkw values(testseq_wkw_id.nextval,'test'||testseq_wkw_id.currval);
+
+
+	3.删除序列
+	  drop sequence 序列名;
+
+	drop sequence testseq_wkw_id; 
+	
+	
+	4.创建一个复杂的序列
+	  user_sequences：保存用户创建的序列信息
+	  desc user_sequences;
+	  select sequence_name from user_sequences;
+
+	
+	create sequence testseq_wkw_seq
+		increment by 5
+		start with 5
+		minvalue 5
+		maxvalue 100
+		cache 3;
+
+	insert into testseq_wkw values(testseq_wkw_seq.nextval,'test'||testseq_wkw_seq.currval);
+
+	select *from testseq_wkw;
+
+	--序列和表是相互独立的，一个序列可以应用到多个表，但是实际开发时一个序列只应用到一个表
+	 
+
+2.索引
+	index
+	1.作用：提高查询效率
+		用空间、时间换时间
+		索引会消耗大量的空间和时间
+	2.系统会自动在唯一性的字段上自动创建索引
+	3.手动添加索引
+	  create index 索引名 on 表名（字段）
+	create index testind_name on test_index(name)
+
+	4.删除索引
+   	  drop index 索引名;
+
+3.视图  （可以把表里想看的数据 在视图里只看这些数据 不看其他不需要看的数据）
+	view
+	视图本质上就是一条查询的sql语句
+	相对视图对应的数据而言，视图的空间可以忽略不计
+
+	create table emp_wkw as select * from s_emp;  --将s_emp复制一份 取名为 emp_wkw
+
+
+	1.创建视图
+	  create or replace view 视图名 as select 语句；
+	
+		create or replace view myview_emp_wkw
+		as
+			select id,first_name from emp_wkw;
+
+	2.操作视图
+	  select * from myview_emp_wkw;
+
+	  delete from myview_emp_wkw where id=25;  --在视图里删数据  原表里的数据也会被删除
+
+	对视图的操作实质上就是对原表的操作，所以对视图执行的dml（insert,delete,update）就是改变的原表数据
+
+	3.作用
+	  可以对同一份物理数据，做不同的表现
+
+
+/*4.2 分页*/
+	oracle rownum(伪列)
+
+	把s_emp表中的第一页数据显示出来 每页显示5行
+	select rownum,first_name,salary from s_emp
+		where rownum<6;
+ 
+	把s_emp表中的第二页数据显示出来 每页显示5行
+	select rownum,first_name,salary from s_emp
+		where rownum>=6 and rownum<11;  --没有结果
+	--使用rownum时，只要有一条不符合条件就不再继续执行	
+
+
+	把s_emp表中的第二页数据显示出来 每页显示5行
+	select *from
+	  (select rownum r_id,first_name,salary from s_emp
+		where rownum<11)
+	where r_id>5;
+
+
+	按照工资降序排序，显示第二页数据，每页5条
+	
+	select * from
+	 (select rownum r_id,first_name,salary from
+	  (select first_name,salary from s_emp
+		order by salary desc)
+	 where rownum<11)
+	where r_id>5;	
+
+	第n页，每页m行
+	select * from
+	 (select rownum r_id,first_name,salary from
+	  (select first_name,salary from s_emp
+		order by salary desc)
+	 where rownum<n*m+1)
+	where r_id>(n-1)*m;
+
+总结：
+一、数据库介绍
+ sql：
+ select
+ ddl:create drop alter
+ dml:insert delete update
+ tcl:commit  rollback  savepoint
+二、select
+1.select..from
+   单列
+   多列
+   全部
+   数学运算
+   列的别名  as ""
+   字符串  ''   ||
+   排重 distinct
+   null值的处理  nvl
+2.where子句
+   >  <  >=  <=  =  !=(<> ^=)
+   between and  闭区间
+   like                   模糊查询  % _     'S\_%' escape '\'       '
+   in                      列表
+   is null   
+   and or not
+   对立面          
+3.order by子句
+   order by 排序规则(字段) 排序方式(asc desc)
+   多列排序
+   null值 按最大值处理
+4.单行函数
+   字符串
+   数学
+   日期  date
+   类型转换  to_char   to_date
+   函数嵌套
+5.表连接
+   内连接
+   外连接
+
+   等值连接
+   非等值连接
+    
+   自连接
+   
+    
+6.组函数和分组
+   count  max  min   sum  avg
+   group by 
+   having
+7.子查询
+   where
+   having
+   from
+
+   update emp_zsm_00 set salary = salary+100
+      where salary<(
+    select salary from emp_zsm_00 
+        where  first_name='Ben'
+  );
+
+三、表操作
+ 1.建表 删表   
+ 2.dml
+    insert
+    update
+    delete
+ 3.tcl
+ 4.约束
+   
+四、数据库对象 分页
+ 序列
+ 索引
+ 视图
+
+ 分页  rownum
+ 
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,653 @@
+关键字：/*C++时时刻刻存在运算符重载*/  函数模板  类模板
+    
+
+静态类型系统：标识符的类型在运行期不可改变。
+动态类型系统：标识符的类型在运行期可动态变化。
+
+C/C++是静态类型语言，所有的类型信息都是在编译期间确定的，运行时不可改变与类型相关的一切属性。
+优点：性能卓越。底层操作。
+缺点：缺乏灵活性，不适用于编写与类型无关的通用算法和数据结构。
+
+
+typed.cpp
+
+#include <iostream>
+using namespace std;
+int max_int (int x, int y) {
+	return x < y ? y : x;
+}
+double max_double (double x, double y) {
+	return x < y ? y : x;
+}
+string max_string (string x, string y) {
+	return x < y ? y : x;
+}
+int main (void) {
+	int a = 123, b = 456;
+	cout << max_int (a, b) << endl; // 456
+	double c = 1.3, d = 4.6;
+	cout << max_double (c, d) << endl; // 4.6
+	string e = "hello", f = "world";
+	cout << max_string (e, f) << endl;
+	// world
+	char g[] = "hello", h[] = "world";
+	cout << max_string (g, h) << endl;
+	// world 
+	return 0;
+}
+
+
+一. 模板起源  	模板————类型参数化
+1. 针对具体类型的实现
+	C/C++ 语言的静态类型系统，在满足效率和安全性要求的同时，很大程度上也成为阻碍程序员编写通用代码的桎梏。它迫使人们不得不为每一种数据类型编写完全或几乎完全相同的代码，虽然它们在抽象层面上是一致的。
+
+2. 借助参数宏摆脱类型的限制————Live free or die
+	宏定义只是在预处理器的作用下，针对源代码的文本替换，其本身并不具备函数语义。因此借助于参数宏可以在某种程度上使程序的编写摆脱那些源于类型的约束和限制，但同时也因此丧失了类型的安全性。
+
+untyped.cpp
+
+#include <iostream>
+using namespace std;
+#define max(x, y) ((x) < (y) ? (y) : (x))
+int main (void) {
+	int a = 123, b = 456;
+	cout << max (a, b) << endl; // 456
+	double c = 1.3, d = 4.6;
+	cout << max (c, d) << endl; // 4.6
+	string e = "hello", f = "world";
+	cout << max (e, f) << endl; // world
+
+//	cout << max (a, f) << endl; 
+//错误： ‘operator<’在‘a < f’中没有匹配
+	
+	cout << max (a, d) << endl;	//123
+
+	char h[] = "zhello", g[] = "world";
+	cout << max (g, h) << endl; // world	//这是不对的 并没有把内存中的数据代入比较，而是比较g h地址的大小
+	cout<<(void*)h<<" "<<&g<<endl;	//0xbfde2f3f 0xbfde2f46
+	return 0;
+}
+
+
+3. 两全其美的解决知道
+	利用宏定义构建通用代码框架，让预处理器将其扩展为针对不同类型的具体版本。将宏的一般性和函数的类型安全性“完美”的结合起来。
+	缺点：必须显式调用所定义的宏，否则预处理器不会扩展出针对具体类型的函数定义，而且宏无法单步调试。
+
+macro.cpp
+
+#include <iostream>
+using namespace std;
+#define MAX(T) \
+T max_##T (T x, T y) { \
+	return x < y ? y : x; \
+}
+MAX (int)	//必须显式调用所定义的宏
+/*
+int max_int (int x, int y) {
+	return x < y ? y : x;
+}
+*/
+MAX (double)
+MAX (string)
+#define max(T) max_##T
+int main (void) {
+	int a = 123, b = 456;
+	cout << max(int) (a, b) << endl; // 456
+//	cout << max_int (a, b) << endl;
+	double c = 1.3, d = 4.6;
+	cout << max(double) (c, d) << endl;
+	// 4.6
+	string e = "hello", f = "world";
+	cout << max(string) (e, f) << endl;
+	// world
+	char g[] = "zhello", h[] = "world";
+	cout << max(string) (g, h) << endl;
+	// zhello
+	return 0;
+}
+
+
+
+
+二.函数模板
+1. 定义
+	template<typename 类型形参1,typename 类型形参2,...>
+	返回类型 函数名（调用形参表）[常属性][异常说明] {
+		函数体;
+	}
+
+	类型形参可以用于函数的返回类型，形参表以及函数体，表示一种参数化的类型。
+
+2. 使用
+	函数名<类型形参1,类型形参2,...> (调用实参表);
+
+	类型实参即用于传递给模板类型形参的各种具体类型，如：
+	int/float/double/string/Student/Teacher ...
+
+3. 实例化
+	编译器根据调用函数模板时所提供的类型实参，按照从前到后的顺序，依次结合函数模板的类型形参，得到一个/*针对类型实参的具体函数*/，并编译之，这个过程叫做函数模板的实例化。
+	/*函数模板并不代表一个具体函数*/，也不存在于目标模块，当然也不参加链接，它实际上表示的是一组具有重载关系的函数族。
+
+
+ftmpl.cpp
+
+#include <iostream>
+using namespace std;
+// 函数模板
+template<typename T>
+T max (T x, T y) {
+	return x < y ? y : x;
+}
+int main (void) {
+	int a = 123, b = 456;
+	cout << ::max<int> (a, b) << endl; // 456   //max与库函数冲突 加上:: 把max作用域放在当前的空间里
+
+	double c = 1.3, d = 4.6;
+	cout << ::max<double> (c, d) << endl; // 4.6
+
+	string e = "hello", f = "world";
+	cout << ::max<string> (e, f) << endl; // world
+
+	char g[] = "hello", h[] = "world";
+	cout << ::max<string> (g, h) << endl;  //world
+
+	return 0;
+}
+
+
+
+4. 类型参数
+	无论基本类型，还是类数据类型都可以作为函数模板的类型实参，唯一的条件就是该类型必须要满足函数模板的要求，否则将导致编译失败。
+
+typearg.cpp
+
+#include <iostream>
+using namespace std;
+template<typename T>
+T add (T x, T y) {
+	// 要求T所被实例化的类型要支持"+"操作符
+	return x + y;
+}
+class Integer {
+public:
+	Integer (int i) : m_i (i) {}
+	Integer const operator+ (		//类里面的运算符重载必须要写，要不然不满足“+”操作符
+		Integer const& rhs) const {	//类数据类型不是基本数据类型不会提供缺省“+”caozuof
+		return m_i + rhs.m_i;
+	}
+	friend ostream& operator<< (ostream& os,
+		Integer const& i) {
+		return os << i.m_i;
+	}
+private:
+	int m_i;
+};
+class Boy {};
+class Girl {};
+class Babby {};
+Babby const operator+ (Boy boy, Girl gril) {
+	return Babby ();
+}
+int main (void) {
+	int a = 520, b = 500;
+	cout << add<int> (a, b) << endl;
+	double c = 5.2, d = 5.0;
+	cout << add<double> (c, d) << endl;
+	string e = "hello ", f = "world";
+	cout << add<string> (e, f) << endl;
+
+//	指针不能相加，不满足add模板对类型参数的要求
+//	char const* g = "hello ", *h = "world";
+//	cout << add<char const*> (g, h) << endl;
+//错误： 操作数类型‘const char*’和‘const char*’对双目‘operator+’而言无效
+
+	Integer i (520), j (500);
+	cout << add<Integer> (i, j) << endl;
+	return 0;
+}
+
+
+
+
+5. 二次编译
+	与普通函数不同，函数模板事实上至少要被编译两次，第一次是在实例化之前，先检查模板代码本身，做与类型参数无关的语法处理，生成该函数模板的内部表示。第二次是在实例化期间，用所提供的类型实参结合内部表示中的类型形参，在完成与类型相关的语法处理以后，生成二进制形式的机器指令。
+	有时候，编译器会在本来第二次编译时处理的问题，提前到第一次编译时处理，由于此时的类型参数尚不明确，可能引发编译失败，需要使用特殊的处理手段予以避免。（以后说特殊处理手段）
+
+
+
+typename.cpp
+
+#include<iostream>
+#include<typeinfo>
+using namespace std;
+
+class A{
+public:
+	typedef unsigned long long ULL;//成员类型
+
+};
+
+template<typename X>
+void foo(){
+	X::ULL x;			//在第一次编译时就做第二次编译处理的问题，导致编译器误以为X::ULL为类/名字空间的成员，却又在定义类。
+//错误： 依赖名‘X:: ULL’被解析为非类型，但实例化却产生了一个类型
+
+	cout<<typeid(x).name()<<endl;
+}
+int main(void)
+{
+	A::ULL x;
+	cout<<typeid(x).name()<<endl;
+	foo<A>();
+	return 0;
+}
+
+
+
+
+6. 隐式推断
+	如果函数模板调用参数的类型和该模板的类型参数相关，那么在调用该函数模板时，即使不显式指定模板的类型实参，编译器也有能力根据调用参数的类型隐式推断出正确的模板参数，就是为了获得与普通函数调用一致的语法形式。但是有时候隐式推断出的类型可能和程序设计者所期望的类型不一致，导致结果异于预期，需要引起注意。
+	隐式推断不能和隐式转换同时进行，必须显式转换。
+
+
+ftmpl.cpp
+
+#include <iostream>
+using namespace std;
+// 函数模板
+template<typename T>
+T max (T x, T y) {
+	return x < y ? y : x;
+}
+int main (void) {
+	int a = 123, b = 456;
+//	cout << ::max<int> (a, b) << endl; // 456
+	cout << ::max (a, b) << endl;
+	double c = 1.3, d = 4.6;
+//	cout << ::max<double> (c, d) << endl;
+	cout << ::max (c, d) << endl;
+	// 4.6
+	string e = "hello", f = "world";
+//	cout << ::max<string> (e, f) << endl;
+	cout << ::max (e, f) << endl;
+	// world
+	char g[] = "zhello", h[] = "world";
+	cout << ::max<string> (g, h) << endl; //zhello
+//错误	cout << ::max (g, h) << endl;//隐式推断就是在比较两个指针的大小
+	// world
+
+	return 0;
+}
+
+
+deduc.cpp
+
+#include<iostream>
+#include<cstdlib>
+#include<typeinfo>
+using namespace std;
+
+template<typename T>
+void foo(T const& x,T const& y){
+	cout<<typeid(x).name()<<' '
+	<<typeid(y).name()<<endl;
+
+}
+
+template<typename T>
+void bar(T x,T y){
+	cout<<typeid(x).name()<<' '
+	<<typeid(y).name()<<endl;
+	
+}
+
+template<typename R,typename A>
+R hum(A const& x){
+	R y;
+	cout<<typeid(x).name()<<' '
+	<<typeid(y).name()<<endl;
+	return y;
+}
+
+int main()
+{
+	int a,b;
+	foo(a,b);//i i
+	double c,d;
+	foo(c,d);//d d
+	char e[10],f[10];
+	bar(e,f);	//Pc Pc //当作首地址使用
+	foo(e,f);	//A10_c A10_c //引用把数组当作整体看
+
+	//数组名 二义性
+	//int a[5]={};
+	//a[1]=10;//a代表数组的首址
+	//*(a+1)=10;
+	//cout<<sizeof(a)<<endl;
+	//a代表数组的整体，int[5],20字节
+
+	bar("hello","world");//PKc PKc
+	foo("hello","world");//A6_c A6_c
+//	foo("hello","worldd");//A6_c A7_c  类型不匹配
+// 错误： 对‘foo(const char [6], const char [7])’的调用没有匹配的函数
+
+//	foo(a,c);//隐式推断和隐式转换互斥
+//错误： 对‘foo(int&, double&)’的调用没有匹配的函数
+
+//	c=hum(a);//****返回类型不参与隐式推断*****************************
+//错误： 对‘hum(int&)’的调用没有匹配的函数
+	c=hum<double,int>(a);//i d
+	c=hum<double>(a);//i d //根据a推断int
+
+	return 0;
+}
+
+
+7. 函数模板的重载
+	函数模板和函数模板，以及函数模板和普通函数之间也可以构成重载关系，与普通函数之间重载不同，函数模板的重载在解析规则中（在去常转换，有损转换...）增加了类型针对性，越强则越优先匹配的条件。
+
+overload.cpp
+
+#include<iostream>
+#include<typeinfo>
+using namespace std;
+
+template<typename T>
+T const& max(T const& x,T const& y){
+	cout<<"<1"<<typeid(x).name()<<'>'<<flush;
+	return x<y?y:x;
+}
+
+template<typename T>
+T* const& max(T* const& x,T* const& y){
+	cout<<"<2"<<typeid(x).name()<<'>'<<flush;
+	return *x<*y?y:x;
+}
+
+int main()
+{
+	int a=123,b=456;
+	cout<<::max(a,b)<<endl;
+	cout<<*::max(&a,&b)<<endl;
+
+	return 0;
+}
+
+结果：	<1i>456
+	<2Pi>456
+
+
+
+
+overload.cpp
+
+#include<iostream>
+#include<typeinfo>
+#include<cstring>
+using namespace std;
+
+template<typename T>
+T const& max(T const& x,T const& y){
+	cout<<"<1"<<typeid(x).name()<<'>'<<flush;
+	return x<y?y:x;
+}
+
+template<typename T>
+T* const& max(T* const& x,T* const& y){
+	cout<<"<2"<<typeid(x).name()<<'>'<<flush;
+	return *x<*y?y:x;
+}
+
+char const* const& max(char const* const& x,char const* const& y){
+	cout<<"<3"<<typeid(x).name()<<'>'<<flush;
+	return strcmp(x,y)<0?y:x;
+}
+
+template<typename T>
+T const& max(T const& x,T const& y,T const& z){
+	cout<<"<4"<<typeid(x).name()<<'>'<<flush;
+	return ::max(::max(x,y),z);
+}
+/*
+重载解析在函数模板第二次编译时进行，但解析选择的候选函数是在函数模板被第一次编译时确定的
+
+char const* const& max(char const* const& x,char const* const& y){
+	cout<<"<3"<<typeid(x).name()<<'>'<<flush;
+	return strcmp(x,y)<0?y:x;
+*/
+				//cout<<::max(z,y,x)<<endl; 
+				//将3 放在4后面 执行上一个结果为：<4PKc><2PKc><2PKc>A
+int main()
+{
+	int a=123,b=456;
+	cout<<::max(a,b)<<endl;
+	cout<<*::max(&a,&b)<<endl;
+	char const* c="aaa",*d="abc";
+	cout<<::max(c,d)<<endl;
+
+	int e=789;
+	cout<<::max(a,b,e)<<endl;
+	cout<<"---------------------------"<<endl;
+	char const* x="ABC";
+	char const* y="AB";
+	char const* z="A";
+	cout<<::max(y,x)<<endl;			//<3PKc>ABC
+	cout<<::max<>(y,x)<<endl;		//<2PKc>AB
+	cout<<::max<char const*>(y,x)<<endl;	//<1PKc>AB
+	cout<<::max<char const>(y,x)<<endl;	//<2PKc>AB
+	cout<<::max(z,y,x)<<endl;		//<4PKc><3PKc><3PKc>ABC
+	return 0;
+}
+
+
+
+#include<iostream>
+#include<typeinfo>
+#include<cstring>
+using namespace std;
+
+
+template<typename T>
+T const& max(T const& x,T const& y){
+	cout<<"<1"<<typeid(x).name()<<'>'<<flush;
+	return x<y?y:x;
+}
+
+/*
+char const* const& max(char const* const& x,char const* const& y){
+	cout<<"<3"<<typeid(x).name()<<'>'<<flush;
+	return strcmp(x,y)<0?y:x;
+}
+*/
+template<typename T>
+T const& max(T const& x,T const& y,T const& z){
+	cout<<"<4"<<typeid(x).name()<<'>'<<flush;
+	return ::max(::max(x,y),z);
+}
+/*
+重载解析在函数模板第二次编译时进行，但解析选择的候选函数是在函数模板被第一次编译时确定的
+*/
+char const* const& max(char const* const& x,char const* const& y){
+	cout<<"<3"<<typeid(x).name()<<'>'<<flush;
+	return strcmp(x,y)<0?y:x;
+}
+template<typename T>
+T* const& max(T* const& x,T* const& y){
+	cout<<"<2"<<typeid(x).name()<<'>'<<flush;
+	return *x<*y?y:x;
+	}
+int main()
+{
+	int a=123,b=456;
+	cout<<::max(a,b)<<endl;
+	cout<<*::max(&a,&b)<<endl;
+	char const* c="aaa",*d="abc";
+	cout<<::max(c,d)<<endl;
+
+	int e=789;
+	cout<<::max(a,b,e)<<endl;
+	cout<<"---------------------------"<<endl;
+	char const* x="ABC";
+	char const* y="AB";
+	char const* z="A";
+	cout<<::max(y,x)<<endl;
+	cout<<::max<>(y,x)<<endl;
+	cout<<::max<char const*>(y,x)<<endl;	
+	cout<<::max<char const>(y,x)<<endl;	
+	cout<<::max(z,y,x)<<endl;		//<4PKc><1PKc><1PKc>A     就1在4前面
+	return 0;
+}
+
+
+
+
+
+
+
+//作业：根据所观察到的现象，解释原因
+#include <cstring>
+#include <iostream>
+#include <typeinfo>
+using namespace std;
+template<typename T>
+T const& max (T const& x, T const& y) {
+	cout << "<1" << typeid (x).name () << '>'
+		<< flush;
+	return x < y ? y : x;
+}
+template<typename T>
+T* const& max (T* const& x, T* const& y) {
+	cout << "<2" << typeid (x).name () << '>'
+		<< flush;
+	return *x < *y ? y : x;
+}
+/*
+char const* const& max (char const* const& x,
+	char const* const& y) {
+*/
+char const* max (char const* x,			
+	char const* y) {			//返回的是一个指针，在4版本中将用一个临时变量存放该指针，而4版本的返回类型是引用，因此该引用的目标在4版本返回以后会成为未定义的变量。
+	cout << "<3" << typeid (x).name () << '>'
+		<< flush;
+	return strcmp (x, y) < 0 ? y : x;
+}
+template<typename T>
+T const& max (T const& x, T const& y,
+	T const& z) {
+	cout << "<4" << typeid (x).name () << '>'
+		<< flush;
+	return ::max (::max (x, y), z);	// 警告： 返回临时变量的引用 
+}
+/*
+重载解析在函数模板第二次编译时进行，但解析选
+择的候选函数是在函数模板被第一次编译时确定的
+char const* const& max (char const* const& x,
+	char const* const& y) {
+	cout << "<3" << typeid (x).name () << '>'
+		<< flush;
+	return strcmp (x, y) < 0 ? y : x;
+}
+*/
+int main (void) {
+	int a = 123, b = 456;
+	cout << ::max (a, b) << endl;
+	cout << *::max (&a, &b) << endl;
+	char const* c = "aaa", *d = "abc";
+	cout << ::max (c, d) << endl;
+	int e = 789;
+	cout << ::max (a, b, e) << endl;
+	cout << "----------------" << endl;
+	char const* x = "ABC";
+	char const* y = "AB";
+	char const* z = "A";
+	cout << ::max (y, x) << endl;
+	cout << ::max<> (y, x) << endl;
+	cout << ::max<char const*> (y, x) <<endl;
+	char const* const& r = ::max (x, y, z);	//从此处实例化
+	cout << r << endl; // ABC
+	char const* o = "123";
+	char const* p = "12";
+	char const* q = "1";
+	::max (o, p, q);
+	cout << r << endl; // ABC ?
+	return 0;
+}
+
+结果：	<1i>456
+	<2Pi>456
+	<3PKc>abc
+	<4i><1i><1i>789
+	----------------
+	<3PKc>ABC
+	<2PKc>AB
+	<1PKc>AB
+	<4PKc><3PKc><3PKc>ABC
+	<4PKc><3PKc><3PKc>123
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
