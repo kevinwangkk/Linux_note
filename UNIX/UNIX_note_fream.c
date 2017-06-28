@@ -46,7 +46,10 @@
 	day29  标C和UC文件操作函数的效率  
 		   文件描述符工作原理
 		   #include <unistd.h>  dup()/dup2()  //复制文件描述符
-	day30  
+	day30  文件管理
+			#include <unistd.h>
+    		#include <fcntl.h>
+			fcntl()  //manipulate file descriptor  实现文件锁
 
 4. Unix/Linux系统下的进程管理技术；
 

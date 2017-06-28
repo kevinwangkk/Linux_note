@@ -1,0 +1,41 @@
+1. day01 kernel : NFS config
+   day02 kernel : u-boot
+   day03 kernel : kernel make
+   day04 kernel : kernel make menuconfig
+   		  kernel arch/arm/mach-s5pv210/mach-cw210
+		  make menuconfig add new menu	  
+		  driver static make kernel
+		  p295 rootfs
+   day05 kernel : rootfs busybox
+
+
+2. day01 driver : makefile
+		  内核程序多文件调用
+   day02 driver : printk级别
+	 	  linux内核GPIO操作库函数
+			#include <asm/gpio.h>
+			#include <plat/gpio-cfg.h>
+		  	int gpio_request(int gpio, char *label)
+			void gpio_free(int gpio)
+			int gpio_direction_output(int gpio, int value)
+		  	int gpio_direction_input(int gpio)
+			int gpio_set_value(int gpio, int value)
+			int gpio_get_value(int gpio)
+		  驱动开灯 关灯
+		  结构体的标记初始化
+		  一切皆文件 open read write close
+		  手动申请设备号 2个函数
+   day03 driver : 手动申请设备号写驱动例程
+		  驱动流程
+		  write -- copy_from_user  例程
+		  read  -- copy_to_user	   例程
+   day04 driver : ioctl硬件操作接口
+		  ioctl自动创建设备文件
+		  混杂设备驱动
+   
+
+
+
+
+
+

@@ -42,10 +42,10 @@
 	2. 操作文件描述符的标志 File descriptor flags
 	   F_GETFD/F_SETFD - 获取/设置文件描述符的标志
 	
-	3. 操作文件的状态标志			File status flags
+	3. 操作文件的状态标志 File status flags
 	   F_GETFL/F_SETFL - 获取/设置文件的状态标志
 
-	4. 实现建议锁/文件锁的功能（重点）	Advisory locking
+	4. 实现建议锁/文件锁的功能（重点） Advisory locking
 	   F_GETLK, F_SETLK and F_SETLKW - 实现加锁/解锁功能
 	   F_GETLK, F_SETLK and F_SETLKW are used to acquire,  release,  and  test  for the existence of record locks
 
