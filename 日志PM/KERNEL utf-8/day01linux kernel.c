@@ -98,9 +98,10 @@
 		rootfs根文件系统
 	
 	2. 系统软件之bootloader的功能，
-	  特点：1.系统上电运行的第一个软件
+	  特点：
+		1.系统上电运行的第一个软件
 		2.bootloader是裸板代码，跟ARM裸板的shell一样
-	        3.主要做硬件相关的初始化工作，类似ARM裸板shell的main函数的各种xx_init();
+	    3.主要做硬件相关的初始化工作，类似ARM裸板shell的main函数的各种xx_init();
 		4.硬件初始化完毕，将linux内核加载到内存，并且从内存中引导linux内核，至此linux内核运行
 		5.在linux内核正式运行之前，还要给linux内核传递启动参数，告诉内核，rootfs根文件系统在哪里。将来内核去挂接rootfs。
 		6.bootloader类似PC机的BIOS
@@ -112,7 +113,7 @@
 		内存管理：负责内存的分配，内存的映射，内存的销毁等
 		网络协议栈：TCP/IP网络协议栈
 		设备驱动：负责硬件的管理和操作
-		文件系统：支持多种多样的文件系统，例如：ntfs，fat32，ext4，yaffs2,cramfs等等
+		文件系统：支持多种多样的文件系统，例如：ntfs，fat32，ext4，yaffs2，cramfs等等
 		系统调用：open，close，read，write，mmap，brk，sbrk，fork，exit等
 		平台代码：linux能够运行在多种多样的硬件平台上（x86，arm，mips，powerpc） 说明linux内核中有相关的支持代码，这些代码为通常平台代码
 
@@ -178,19 +179,19 @@
 	  3. 烧写logo
 		tftp 50008000 logo.bin
 		nand erase 200000 300000
-		nand write 50008000 200000 300000
+		nand write 50008000 200000 300000	//文件所在的内存地址 准备写入的起始地址 写入的地址大小
 	  4. 烧写linux kernel
 		tftp 50008000 zImage
 		nand erase 500000 500000  
 		nand write 50008000 500000 500000
 	  5. 烧写rootfs
-		tftp 50008000 rootfs_android.bin			
+		tftp 50008000 rootfs_android.bin
 		nand erase a00000
 		nand write.yaffs 50008000 a00000 $filesize
 		或者
 		nand write.yaffs 50008000 a00000 $(filesize)
 	  6. 在uboot中设置关键的启动参数
-        	setenv bootcmd nand read 50008000 500000 500000 \; bootm 50008000                           内存地址 nand起始地址 大小
+        	setenv bootcmd nand read 50008000 500000 500000 \; bootm 50008000                 内存地址 nand起始地址 大小
         	setenv bootargs root=/dev/mtdblock3 init=/init console=ttySAC0,115200
 
         说明：

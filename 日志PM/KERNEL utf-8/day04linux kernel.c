@@ -80,7 +80,7 @@
 		-*- GPIO Support  --->
 
 		//一线式总线驱动
-		< > Dallas's 1-wire support  --->
+		< > Dallas's 1-wire support  --->  '
 
 		//看门狗驱动
 		[*] Watchdog Timer Support  --->
