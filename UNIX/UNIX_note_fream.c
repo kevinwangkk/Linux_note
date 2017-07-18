@@ -13,8 +13,8 @@
 
 1. Unix/Linux系统的概述以及编程基础；
 
-	day23  manual gcc(编译命令) 头文件的详细组成
-	day24  常用预处理宏指令
+	day23  manual gcc(编译命令) 　头文件的详细组成 (1)头文件卫士(2)其他头文件(3)宏定义(4)结构体(5)外部变量和函数声明
+	day24  常用预处理宏指令　 环境变量 export PATH 　查找头文件 whereis stdio.h
 	day25  静态库 共享库         共享库的动态加载 4个函数            #include<dlfcn.h> dlopen()/dlsym()/dlclose()/dlerror()
 	day26  错误处理      #include<errno.h> strerror()/perror()重要
 		   环境表相关函数 #include<stdlib.h> getenv()/setenv()/putenv()/clearenv()
