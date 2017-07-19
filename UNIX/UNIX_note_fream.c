@@ -43,14 +43,52 @@
 			#include <sys/stat.h>
 			#include <fcntl.h>
 			#include <unistd.h>
+
+			获取文件大小的两种方法
+			1. 使用fseek函数调整文件读写位置到末尾，使用ftell函数返回；
+			2. 使用lseek函数调整文件读写位置到末尾，返回值就是文件大小；
+			
 	day29  标C和UC文件操作函数的效率  
 		   文件描述符工作原理
 		   #include <unistd.h>  dup()/dup2()  //复制文件描述符
+		   
 	day30  文件管理
 			#include <unistd.h>
     		#include <fcntl.h>
-			fcntl()  //manipulate file descriptor  实现文件锁
+			fcntl()  //manipulate file descriptor  实现文件锁(重点) 　复制文件描述符
+					在读写操作的时候，附带加锁操作，根据能否进行加锁成功决定是否读写操作；
 
+			#include <unistd.h>
+			access()  //检查文件的存在性及是否拥有相应权限
+
+			#include <sys/stat.h>
+			#include <sys/types.h>
+			#include <unistd.h>
+			stat() / fstat()  //获取指定文件的状态信息
+
+			#include <time.h>
+			ctime()      //将参数指定的整数时间转换为字符串类型时间并返回
+			localtime()  //将参数指定的整数时间转换为结构体指针类型的时间
+
+	day31  文件管理
+			#include <sys/stat.h>
+			chmod() / fchmod()  //修改指定文件的指定权限
+
+
+			#include <unistd.h>
+			#include <sys/types.h>
+			truncate() / ftruncate()  //修改指定文件的指定大小
+
+			#include <sys/stat.h>
+			#include <sys/types.h>
+			umask()   //设置文件在创建时屏蔽的权限为：参数指定的权限值
+
+			#include <sys/mman.h>
+			mmap() / munmap() //建立文件到虚拟地址的映射，可以将对文件的读写操作转换为对内存地址的读写操作，
+			                  //只需要简单的赋值操作就可以将数据写入到文件中，因此又多了一种读写文件的方式
+
+	       目录管理
+			
 4. Unix/Linux系统下的进程管理技术；
 
 

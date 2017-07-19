@@ -7,7 +7,7 @@
 	
 
 1. fcntl函数		manipulate file descriptor
-	#include <unistd.h>
+    #include <unistd.h>
     #include <fcntl.h>
 	int fcntl(int fd, int cmd, ... /* arg */ );
 第一个参数：文件描述符,open函数的返回值
