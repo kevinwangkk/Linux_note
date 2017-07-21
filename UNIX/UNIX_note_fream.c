@@ -88,9 +88,29 @@
 			                  //只需要简单的赋值操作就可以将数据写入到文件中，因此又多了一种读写文件的方式
 
 	       目录管理
-			
+			#include <sys/types.h>
+			#include <dirent.h>
+			opendir() / fdopendir()
+			readdir()
+			closedir()
+			目录相关其他函数
+			递归打印所有子目录
+
+
 4. Unix/Linux系统下的进程管理技术；
 
+	day31  进程管理
+			ps -aux | more - 表示分屏显示所有的进程信息；
+			kill -9 进程号 - 表示杀死指定的进程
+
+			#include <unistd.h>
+			#include <sys/types.h>
+			getpid()  //获取当前进程的进程号
+			getppid() //获取当前进程父进程的进程号 parent
+			getuid()  //获取当前用户的编号 user
+			getgid()  //获取当前用户的用户组编号 group
+
+	day32  
 
 5. Uinx/Linux系统下的信号处理技术；
 

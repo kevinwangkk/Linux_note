@@ -320,6 +320,7 @@ int main()
 	
 on_exit需要类型‘void (*)(int,  void *)’
 
+//例子在结尾
 
 
 /*进程的等待*/
