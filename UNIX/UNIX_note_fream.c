@@ -110,13 +110,141 @@
 			getuid()  //获取当前用户的编号 user
 			getgid()  //获取当前用户的用户组编号 group
 
-	day32  
+	day32  进程创建
+			#include <unistd.h>
+			pid_t fork(void);  //创建子进程
+				1.父子进程的执行关系
+				2.父子进程之间的关系
+				3.父子进程的复制(内存)关系
+
+		   进程终止
+			#include <unistd.h>
+			void _exit(int status); //立即终止正在调用的进程
+
+			#include <stdlib.h>
+			void exit(int status); //终止正常的进程
+
+			#include <stdlib.h>
+			int atexit(void (*function)(void)); //注册一个函数用于进程正常终止时调用
+
+			#include <stdlib.h>
+			int on_exit(void (*function)(int , void *), void *arg); //(带参数)注册一个函数用于进程正常终止时调用
+
+		   进程等待
+			#include <sys/types.h>
+			#include <sys/wait.h>
+			pid_t wait(int *status); //等待进程的状态改变
+				WIFEXITED(*status) - 当子进程正常终止时返回真
+				WEXITSTATUS(*status) - 返回子进程的退出状态信息
+
+			#include <sys/types.h>
+			#include <sys/wait.h>
+			pid_t waitpid(pid_t pid, int *status, int options); //wait for process to change state
+
+		   进程的其他管理函数
+			#include <unistd.h>
+			#include <sys/types.h>
+			pid_t vfork(void); //create a child process and block parent
+
+			vfork函数和exec系列函数配合使用
+
+			#include <unistd.h>
+			execl, execlp, execle, execv, execvp, execvpe - execute a file //执行文件
+
+			#include <stdlib.h>
+			int system(const char *command); //execute a shell command
+
 
 5. Uinx/Linux系统下的信号处理技术；
+
+	day33  信号的处理
+			信号本质就是一种软件中断
+			kill -l  表示显示当前系统所支持的所有信号
+
+			SIGINT  2   采用ctrl+c来产生该信号，默认处理方式为终止进程
+			SIGQUIT 3   采用ctrl+\来产生该信号，默认处理方式为终止进程
+			SIGKILL 9   采用kill -9命令来产生，默认处理方式为终止进程
+
+		   信号3种处理方式
+			1. 默认处理，绝大多数信号的默认处理方式都是终止进程；
+			2. 忽略处理
+			3. 自定义处理/捕获处理
+
+			#include <signal.h>
+			 typedef void (*sighandler_t)(int);
+			 sighandler_t signal(int signum, sighandler_t handler);  //设置指定信号的处理方式
+
+			父子进程对信号的处理方式 
+				fork 和 vfork 区别
+
+		   发送信号函数
+			#include <sys/types.h>
+			#include <signal.h>
+			int kill(pid_t pid, int sig);  //发送信号给进程
+
+			#include <signal.h>
+			int raise(int sig); //给调用者发送信号
+
+			#include <unistd.h>
+			unsigned int sleep(unsigned int seconds); //使进程进入seconds时间睡眠
+
+			#include <unistd.h>
+			unsigned int alarm(unsigned int seconds); //设置second时间的闹钟
+
+	day34  信号集
+			#include <signal.h>
+			int sigemptyset(sigset_t *set); //清空信号集
+			int sigfillset(sigset_t *set); //填满信号集
+			int sigaddset(sigset_t *set, int signum); //增加信号到信号集中
+			int sigdelset(sigset_t *set, int signum); //删除信号集中指定的信号
+			int sigismember(const sigset_t *set, int signum); //判断信号是否存在信号集中
+
+		   信号的屏蔽
+			#include <signal.h>
+			int sigprocmask(int how, const sigset_t *set, sigset_t *oldset); //用于提取/修改当前进程中的信号屏蔽集合
+
+			#include <signal.h>
+			int sigpending(sigset_t *set); 
+			//获取信号屏蔽期间来过但没有来得及处理的信号，将所有获取到的信号存放在参数指定的信号集set中，通过参数带出去；
+
+		   其他信号相关函数
+			sigaction()函数 => signal函数的增强版
+			#include <signal.h>
+			int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact);
+			//用于检查和修改指定信号的处理方式
+
+			#include <signal.h>
+			int sigqueue(pid_t pid, int sig, const union sigval value); //向指定的进程发送指定的信号和附加数据
+
+		   计时器
+			在linux系统中，为每个进程都维护三种计时器，分别为：真实计时器，虚拟计时器，以及实用计时器，一般采用真实计时器进行计时；
+
+			#include <sys/time.h>
+			int getitimer(int which, struct itimerval *curr_value);
+			int setitimer(int which, const struct itimerval *new_value, struct itimerval *old_value);
+			//获取/设置计时器的参数信息
 
 
 6. Uinx/Linux系统下的进程间通信技术；
 
+	day35  进程间通信
+
+			管道
+			管道本质上就是文件，只是一种比较特殊的文件
+			管道分为两种：有名管道 和 无名管道
+			有名管道 - 可以用于任意两个进程间的通信；
+			无名管道 - 只能用于父子进程之间的通信；
+
+			管道的特殊性就在于仅仅作为进程间通信的媒介，但是管道本身并不会存在任何数据
+
+			#include <sys/types.h>
+			#include <sys/stat.h>
+			int mkfifo(const char *pathname, mode_t mode); //创建一个有名管道
+
+			#include <unistd.h>
+			int pipe(int pipefd[2]); //创建无名管道
+
+			共享内存
 
 7. Uinx/Linux系统下的网络编程技术；
 

@@ -32,15 +32,7 @@ typedef __sigset_t sigset_t;
 
        #include <signal.h>
 
-       int sigemptyset(sigset_t *set);
-
-       int sigfillset(sigset_t *set);
-
-       int sigaddset(sigset_t *set, int signum);
-
-       int sigdelset(sigset_t *set, int signum);
-
-       int sigismember(const sigset_t *set, int signum);
+       ;
 
 RETURN VALUE
        sigemptyset(), sigfillset(), sigaddset(), and sigdelset() return  0  on
@@ -328,7 +320,7 @@ pid=3622
 1. sigaction()函数 => signal函数的增强版 		examine and change a signal action
        #include <signal.h>
 
-       int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact);
+       	
 
 第一个参数：信号值/信号名称（设置哪个信号的处理方式）
 	可以指定任何有效的信号，但是不能指定SIGKILL和SIGSTOP
@@ -630,7 +622,7 @@ int main()
 	}
 	printf("设置计时器成功\n");
 	
-	getchar();
+	getchar(); //清空缓冲区数据（可能会输入的数据）
 	//3.关闭计时器
 	timer.it_value.tv_sec=0;
 	res=setitimer(ITIMER_REAL,&timer,NULL);
