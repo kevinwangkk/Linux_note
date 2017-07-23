@@ -227,6 +227,19 @@
 
 6. Uinx/Linux系统下的进程间通信技术；
 
+				常用的进程间通信技术
+				1. 文件
+				2. 信号
+				3. 管道（了解）
+				4. 共享内存
+				5. 消息队列（重点）
+				6. 信号量集
+				7. 网络（重点）
+				... ...
+				其中 4 5 6 三种通信方式统称为 XSI IPC通信方式
+				（X/open System Interface Inter-Process Communication）
+
+
 	day35  进程间通信
 
 			管道
@@ -245,10 +258,192 @@
 			int pipe(int pipefd[2]); //创建无名管道
 
 			共享内存
+			共享内存本质就是一块由系统内核维护的内存空间，而该内存空间可以共享在两个进程之间，
+			两个进程通过读写该内存区域从而实现通信；
+			最快的IPC通信方式
+
+			//通信模型
+			1. 获取key值，使用ftok函数；
+			2. 创建/获取共享内存，使用shmget函数；
+			3. 挂接共享内存，使用shmat函数；（建立通道）
+			4. 使用共享内存；
+			5. 脱接共享内存，使用shmdt函数；（删除通道）
+			6. 如果不再使用，则删除共享内存，使用shmctl函数；
+
+			#include <sys/types.h>
+			#include <sys/ipc.h>
+			#include <sys/shm.h>   //shared memory  
+
+			消息队列
+			将通信的数据打包成消息，使用两个不同的进程分别发送消息到消息队列中 和 接收消息队列中的消息，从而实现通信；
+
+			/*通信的模型*/
+			1. 获取key值，使用ftok函数；
+			2. 创建/获取消息队列，使用msgget函数；
+			3. 发送消息到消息队列中/接收消息队列中的消息，使用msgsnd/msgrcv函数；
+			4. 如果不再使用，删除消息队列，使用msgctl函数；
+
+			#include <sys/types.h>
+			#include <sys/ipc.h>
+			#include <sys/msg.h>  //message
+
+	day36  信号量集
+			信号量：本质是一种计数器，主要用于控制同时访问同一个共享资源的进程/线程个数；
+			信号量集：本质是信号量的集合，主要用于控制多种共享资源分别被同时访问的进程/线程个数;
+
+			信号量的工作方式
+			1. 初始化信号量为最大值；
+			2. 如果有进程申请到了一个共享资源，则信号量的数值减1；
+			3. 当信号量的数值为0时，申请共享资源的进程进入阻塞状态；
+			4. 如果有进程释放了一个共享资源，则信号量的数值加1；
+			5. 当信号量的数值>0时，等待申请共享资源的进程可以继续抢占共享资源，抢不到共享资源的进程继续阻塞；
+
+			/*通信的模型*/
+			1. 获取key值，使用ftok函数；
+			2. 创建/获取信号量集，使用semget函数；
+			3. 初始化信号量集，使用semctl函数；
+			4. 操作信号量集控制进程/线程的个数，使用semop函数；
+			5. 如果不再使用，则删除信号量集，使用semctl函数；
+
+			#include <sys/types.h>
+			#include <sys/ipc.h>
+			#include <sys/sem.h>  //semaphore
+ 
 
 7. Uinx/Linux系统下的网络编程技术；
+
+	day37 七层网络协议模型和常用的网络协议
+
+			IP地址 子网掩码
+
+			小端系统 低对低
+			大端系统 低对高
+
+			主机字节序 低位字节数据保存在低位内存地址 小端系统的字节序
+			网络字节序 低位字节数据保存在高位内存地址 大端系统的字节序
+
+		  socket 一对一通信模型
+			socket 本意为"插座"，在这里指用于通信的逻辑载体；
+			
+			通信模型
+				服务器：(接收客户端发来的信息 只能读 /*绑定自己的IP地址*/)
+					1. 创建socket，使用socket函数；
+					2. 准备通信地址 ，使用结构体类型；
+					3. 绑定socket和通信地址，使用bind函数；
+					4. 进行通信，使用read/write函数；
+					5. 关闭socket，使用close函数；
+					
+				客户端：(发送信息给服务器 只能写 /*连接服务器的IP地址*/)
+					1. 创建socket，使用socket函数；
+					2. 准备通信地址，使用服务器的地址；
+					3. 连接socket和通信地址，使用connect函数；
+					4. 进行通信，使用read/write函数；
+					5. 关闭socket，使用close函数；
+
+			#include <sys/types.h>
+			#include <sys/socket.h>
+
+	day38 /*基于tcp协议的通信模型 一般用于一对多 需要listen函数排队*/
+			通信模型
+				服务器：
+					1. 创建socket，使用socket函数；
+					2. 准备通信地址，使用结构体类型；
+					3. 绑定socket和通信地址，使用bind函数；
+					4. 监听，使用listen函数；
+					5. 响应客户端的连接请求，使用accept函数；
+					6. 进行通信，使用send/recv函数；
+					7. 关闭socket，使用close函数；
+				客户端：
+					1. 创建socket，使用socket函数；
+					2. 准备通信地址，使用服务器的地址；
+					3. 连接socket和通信地址，使用connect函数；
+					4. 进行通信，使用send/recv函数
+					5. 关闭socket，使用close函数；
+
+			/*tcp协议和udp协议的比较*/
+
+		  /*基于udp协议的通信模型（重点）*/
+			通信模型
+				服务器：
+					1. 创建socket，使用socket函数
+					2. 准备通信地址，使用结构体类型
+					3. 绑定socket和通信地址，使用bind函数；
+					4. 进行通信，使用send/recv/...函数；recvfrom函数
+					5. 关闭socket，使用close函数；
+				客户端：
+					1. 创建socket，使用socket函数；
+					2. 准备通信地址，使用服务器地址；
+					3. 进行通信，使用send/recv/...函数；sendto函数
+					4. 关闭socket，使用close函数；
 
 
 8. Uinx/Linux系统下的多线程开发技术；
 
+	day39 多线程
+			目前主流的操作系统支持多进程，而每一个进程的内部又可以支持多线程，也就是说线程隶属于进程内部的程序流，同一个进程中的多个线程并行处理；
 
+			进程是重量级的，/*每个进程都需要独立的内存空间*/，因此新建进程对于资源的消耗比较大;
+			而线程是轻量级的，/*新建线程会共享所在进程的内存资源，但是每个线程都拥有一块独立的栈区*/；
+
+			#include <pthread.h>
+			int pthread_create(pthread_t *thread, const pthread_attr_t *attr,   //创建线程
+                                     void *(*start_routine) (void *), void *arg);
+
+			#include <pthread.h>
+			pthread_t pthread_self(void); //获取当前正在调用的线程编号
+
+			#include <pthread.h>
+			int pthread_equal(pthread_t t1, pthread_t t2); //比较两个线程的编号是否相等
+
+			#include <pthread.h>
+			int pthread_join(pthread_t thread, void **retval); //join with a terminated thread 汇合
+
+			#include <pthread.h>
+			int pthread_detach(pthread_t thread); //detach a thread 分离
+
+			#include <pthread.h>
+			void pthread_exit(void *retval); //终止当前正在调用的线程，并通过参数返回当前线程的退出状态信息
+
+			#include <pthread.h>
+			int pthread_cancel(pthread_t thread); //send a cancellation request to a thread
+				#include <pthread.h>
+				int pthread_setcancelstate(int state, int *oldstate); //设置当前线程是否可以被取消
+				int pthread_setcanceltype(int type, int *oldtype); //设置当前线程何时被取消
+
+		  线程同步问题 
+			1. 互斥量 加锁 解锁
+				1. 定义互斥量
+					pthread_mutex_t mutex;
+				2. 初始化互斥量
+					pthread_mutex_init(&mutex,NULL);
+				3. 使用互斥量进行加锁
+					pthread_mutex_lock(&mutex);
+				4. 访问共享资源
+				5. 使用互斥量进行解锁
+					pthread_mutex_unlock(&mutex);
+				6. 如果不再使用，则删除互斥量
+					pthread_mutex_destroy(&mutex);
+
+			2. 信号量
+				信号量 - 本质就是一个计数器，用于控制同时访问同一种共享资源的进程/线程个数；
+				当信号量的初始值为1时，效果等同于互斥量
+				#include <semaphore.h>
+					1. 定义信号量
+						sem_t sem;
+					2. 初始化信号量	initialize an unnamed semaphore
+						sem_init(&sem,0,信号量的初始值)
+
+       #include <semaphore.h>
+
+       int sem_init(sem_t *sem, int pshared, unsigned int value);
+
+       Link with -lrt or -pthread.
+
+
+					3. 获取信号量，也就是信号量数值减 1	lock a semaphore
+						sem_wait(&sem);
+					4. 访问共享资源
+					5. 释放信号量，也就是信号量数值加 1	unlock a semaphore
+						sem_post(&sem);
+					6. 如果不再使用，则删除信号量		destroy an unnamed semaphore
+						sem_destroy(&sem);	

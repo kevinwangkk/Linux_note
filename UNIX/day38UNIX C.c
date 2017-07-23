@@ -158,7 +158,7 @@ int main()
 		perror("recv"),exit(-1);
 	}
 	printf("客户端发来的消息是：%s,消息大小是：%d\n",buf,res);
-	//向客户端回发消息
+	//向客户端回发消息（建立了连接知道了客户端的IP才能回发信息）
 	res=send(fd,"I received!",12,0);
 	if(-1==res)
 	{
