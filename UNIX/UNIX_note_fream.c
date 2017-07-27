@@ -446,4 +446,25 @@
 					5. 释放信号量，也就是信号量数值加 1	unlock a semaphore
 						sem_post(&sem);
 					6. 如果不再使用，则删除信号量		destroy an unnamed semaphore
-						sem_destroy(&sem);	
+						sem_destroy(&sem);
+
+/* KERNEL NOTE FREAM */
+
+	uboot
+	kernel
+	rootfs
+
+	day01 
+			NFS
+	day02 
+			uboot
+	day03
+			bootloader kernel
+	day04
+			
+			
+
+
+
+
+
