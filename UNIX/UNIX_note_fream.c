@@ -461,10 +461,23 @@
 	day03
 			bootloader kernel
 	day04
-			
-			
+			将自己写的驱动加载到 make menuconfig 中的方法
 
+			静态编译内核
+			模块化编译内核
+			insmod led_drv.ko //安装驱动到内核中,insmod = insert module
+			./led_test on 1
+			./led_test on 2
+			./led_test off 1
+			./led_test off 2
+  
+			rmmod led_drv //从内核中卸载LED驱动
 
+			rootfs
 
+			利用busybox制作rootfs
+	day5
+			制作的rootfs需要的动态库，配置文件，启动文件，脚本rcS
+			文件系统格式
 
 

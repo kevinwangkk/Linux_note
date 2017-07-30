@@ -280,7 +280,7 @@
     cp /opt/busybox/_install /opt/rootfs -frd  
     //-f 删除已经存在的目标文件而不提示
       -d 拷贝时保留链接
-      -r 若给出的源文件是一目标文件，此时cp将递归复制该目录下所有的子目录和文         件。此时目标文件必须为一个目录名
+      -r 若给出的源文件是一目标文件，此时cp将递归复制该目录下所有的子目录和文件。此时目标文件必须为一个目录名
     du /opt/rootfs -lh  //目前来说大小为3.2M （du不算文件空洞，有效大小 ls算文件空洞）
     重启开发板，进入uboot，执行：
     setenv bootargs root=/dev/nfs nfsroot=192.168.1.8:/opt/rootfs ip=192.168.1.110:192.168.1.1:255.255.255.0::eth0:on init=/linuxrc console=ttySAC0,115200

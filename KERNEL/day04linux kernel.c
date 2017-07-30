@@ -79,7 +79,7 @@
 		//GPIO操作库函数
 		-*- GPIO Support  --->
 
-		//一线式总线驱动
+		//一线式驱动
 		< > Dallas's 1-wire support  --->  '
 
 		//看门狗驱动
