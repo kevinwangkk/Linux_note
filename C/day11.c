@@ -1,4 +1,6 @@
-关键字：string.h  sprintf  atoi  fgets()  指针数组  main函数形参
+关键字：string.h sprintf atoi  fgets()
+		指针数组 
+		main函数形参
 		 sscanf   atof
 
 /* string.h */
@@ -6,7 +8,7 @@
 为了使用这些标准函数需要包含string.h头文件
 strlen()	统计字符串里有效字符个数（有效字符 不包括'\0'）
 		和sizeof关键字不同 sizeof包括'\0'
-		size_t strlen(const char *s);		
+		size_t strlen(const char *s);
 	       （typedef unsigned int size_t ）
 
 strcat()	合并两个字符串
@@ -98,7 +100,7 @@ sscanf()	按格式从字符串里得到多个数字或字符并记录到存储�
 		buffer：存储的数据
 		format：格式控制字符串
 		argument：选择性设定字符串
-s		scanf会从buffer里读进数据，依照format的格式将数据写入到argument里。
+		scanf会从buffer里读进数据，依照format的格式将数据写入到argument里。
 
 #include<stdio.h>
 int main()
@@ -249,7 +251,10 @@ int main(int argc,char *argv[])// 整数 字符指针数组
     return 0;
 }
 
-
+~$./.a.out abcd cdab
+./a.out
+abcd
+cdab
 
 预习：	宏 
 	条件编译
@@ -264,7 +269,7 @@ int main()
 {   
     char *exam[6]={"90","100","100","100","100"};
     int num=0,sum=0;
-    for(num=0;num<=4;num++)
+    for(num=0;num<5;num++)
     {
         sum+=atoi(exam[num]);
     }

@@ -1,21 +1,63 @@
-/* C NOTE FREAM */
+ /* C NOTE FREAM */
 	day1 day2 命令行 vi 基础操作  C基础知识
+
 	day3 数据类型 占位符 零碎知识点 进制转换
+
 	day4 负数进制转换 占地大类型 占地小类型 强转 八进制 十六进制 操作符
+
 	day5 隐式类型转换 分支语句（逻辑判断）if for switch case break continue
+
 	day6 srand()/rand() 输入/输出缓冲区 scanf()/printf()
-							scanf("%*[^\n]");/scanf("%*c"); fflush(stdout);
+							scanf("%*[^\n]");/scanf("%*c"); 
+							fflush(stdout);
+
 	day7 数组 array 多维数组
+
 	day8 函数 volatile 行参 实参 数组形参 可变长函数参数(内容不足)
-	day9 
+
+	day9 exit() 递归函数 作用域 static关键字
+
+	day10 指针 指针数组 const关键字  字符串 字符字面值 字符数组
+
+	day11 string类函数 atoi() atof() fget()
+
+	day12 预处理 条件编译 多文件编程 extern关键字
+
+	day13 typedef 结构体 结构体指针做形参 对齐 补齐
+
+	day14 enum union 二级指针 函数指针 回调函数 malloc() free()
+
+	day15 文件操作系列函数 文件指针
+
+	day16 贪吃蛇例程
+	
+	/*编写一个程序的顺序，先把程序的各个模块考虑好，之后把函数名称定好，
+	  定好需要的指针形参，定好是否需要返回值，
+	  定好结构体变量
+	  然后按整个程序的思路假设各个函数已经写好，把main函数写好
+	  之后在填充各个函数的内部实现功能 */
+
+/* Algorithm NOTE FREAM */
+	day17 stack (array)
+	day18 stack (list)
+	day19 queue (array) (list)
+	day20 list
+	day21 Binary Tree
+	
+	day22 查找算法: 线性 二分法
+			排序算法: 冒泡 插入 选择 快排
+
 
 /* UNIX NOTE FREAM */
 
 1. Unix/Linux系统的概述以及编程基础；
 
 	day23  manual gcc(编译命令) 　头文件的详细组成 (1)头文件卫士(2)其他头文件(3)宏定义(4)结构体(5)外部变量和函数声明
+
 	day24  常用预处理宏指令　 环境变量 export PATH 　查找头文件 whereis stdio.h
+
 	day25  静态库 共享库         共享库的动态加载 4个函数            #include<dlfcn.h> dlopen()/dlsym()/dlclose()/dlerror()
+
 	day26  错误处理      #include<errno.h> strerror()/perror()重要
 		   环境表相关函数 #include<stdlib.h> getenv()/setenv()/putenv()/clearenv()
    
@@ -26,6 +68,7 @@
 			常量字符串不同存放形式的比较(重点) 常量字符串的字符指针 常量字符串的数组
 			虚拟内存管理技术 建立映射关系 0——3G-1 是用户空间 3G——4G-1 是内核空间
 			段错误的由来
+
 	day28  内存相关函数
 			#include <unistd.h>  getpagesize() //获取一个内存页大小
 			#include <unistd.h>  sbrk()/brk()  //申请动态内存 释放动态内存
@@ -450,9 +493,9 @@
 
 /* KERNEL NOTE FREAM */
 
-	uboot
+	uboot - bootloader
 	kernel
-	rootfs
+	rootfs  
 
 	day01 
 			NFS
@@ -479,5 +522,18 @@
 	day5
 			制作的rootfs需要的动态库，配置文件，启动文件，脚本rcS
 			文件系统格式
+
+
+/* 常用命令 */
+	tar -jcvf xxx.tar.bz2 xxx  压缩
+	tar -jxvf xxx.tar.bz2	  解压
+
+	cp arr_stack.c arr_stack.h	//把arr_stack.c 复制到 arr_stack.h
+	cp ../arr_stack.c ./		//把别的目录下的arr_stack.c 复制到当前目录下
+	mv arr_stack.c main.c		//重命名 把arr_stack.c重命名为main.c
+	rm *.gch			//删除所有 .gch文件  
+					//.gch 就是.h只进行预处理和编译不链接所产生的文件
+
+	
 
 

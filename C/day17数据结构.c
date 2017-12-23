@@ -14,7 +14,7 @@ cp arr_stack.c arr_stack.h 	//把arr_stack.c 复制到 arr_stack.h
 cp ../arr_stack.c ./     	//把别的目录下的arr_stack.c 复制到当前目录下
 mv arr_stack.c main.c		//重命名 把arr_stack.c重命名为main.c
 rm *.gch			//删除所有 .gch文件  
-				//.gch 就是.h只进行预处理和编不链接所产生的文件
+				//.gch 就是.h只进行预处理和编译不链接所产生的文件
 
 
 /*数据结构*/
@@ -80,7 +80,9 @@ rm *.gch			//删除所有 .gch文件
 			  也就是记录下一个节点的地址，因此比较消耗内存空间；
 
 逻辑结构和物理结构之间关系
-	每种逻辑结构采用何种物理结构来实现并没有具体的规定，通常根据实现的难易程度，以及在时间复杂度和空间复杂度等方面的考虑，来选择合适的物理结构，也不排除同一种逻辑结构需要使用多种物理结构实现的可能；
+	每种逻辑结构采用何种物理结构来实现并没有具体的规定，
+	通常根据实现的难易程度，以及在时间复杂度和空间复杂度等方面的考虑，来选择合适的物理结构，
+	也不排除同一种逻辑结构需要使用多种物理结构实现的可能；
 
 运算结构
 	描述数据结构的创建.销毁.增删改查以及相关的算法使用。
@@ -107,7 +109,7 @@ rm *.gch			//删除所有 .gch文件
 #include<stdio.h>
 #include<stdlib.h>
 
-typedef struct{
+typedef struct {
 	//int arr[5];//记录数据元素
 	int *arr;//记录数据的首地址
 	int len;//记录数组中可以存放的元素个数
@@ -180,7 +182,7 @@ Stack *stack_create(int len)
 {
 	//1.创建栈
 	//Stack stack;//局部变量
-	//return &stack;//永远不要返回局部变量的地址
+	//return &stack;//永远不要返回局部变量的地址 (局部变量可以返回存储到其他地址)
 	//使用static关键字进行修饰//无法手动释放
 	Stack *ps=(Stack*)malloc(sizeof(Stack));
 	if(NULL==ps)

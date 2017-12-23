@@ -31,6 +31,7 @@ void *realloc(void *ptr, size_t size);
 fopen函数需要两个参数
 1. 代表要打开的文件路径
 2. 代表打开方式(决定程序中可以怎么使用文件)
+
 FILE *fopen(const char *path, const char *mode);
 
 打开方式有如下选择
@@ -96,9 +97,9 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream);
 
 /*写数据到文件 是二进制文件*/
 #include<stdio.h>
-int main
+int main()
 {
-    int arr[]={1,2,3,4,5},size=0;;
+    int arr[]={1,2,3,4,5},size=0;
     FILE *p_file = fopen("a.bin","wb");
     if(p_file)
     {   

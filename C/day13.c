@@ -158,7 +158,7 @@ void print(const pt *p_pt)
 {
     printf("(%d,%d)\n",p_pt->row,p_pt->col);
 }
-pt* read(pt *p_pt)                            //会修改捆绑存储区的内容 不能加const
+pt* read(pt *p_pt)                            //需要修改捆绑存储区的内容 不能加const
 {
     
     scanf("%d%d",&(p_pt->row),&(p_pt->col));

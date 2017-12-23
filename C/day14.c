@@ -1,4 +1,4 @@
-关键字：enum  union  二级指针  函数指针  回调函数  动态分配内存 malloc free
+关键字：enum     union  二级指针 函数指针 回调函数 动态分配内存 malloc free
 
 /* enum */
 枚举也可以用来创建新的数据类型
@@ -132,7 +132,7 @@ malloc函数可以动态分配一组连续的字节
 	这个函数的返回值存放在一个无类型指针存储区里，需要转换成有类型指针才能使用
 void *malloc(size_t size);
 
-不使用的动态分配内存必须还给计算机，	
+不使用的动态分配内存必须还给计算机，
 	这叫做内存释放
 free函数可以用来释放动态分配内存
 	这个函数需要动态分配内存的首地址作为参数
@@ -186,7 +186,7 @@ int main()
 /* 用动态分配内存 中点*/
 #include<stdio.h>
 #include<stdlib.h>
-typedef struct{
+typedef struct {
     int row,col;
 }pt;
 pt *midpt(const pt *p_pt1,const pt *p_pt2)

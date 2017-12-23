@@ -133,7 +133,7 @@
 	1. 开发板软件最终要烧写到内存上（Nor或Nand）
 	2. 明确三部分软件将来在闪存上的存储位置
 	0————————————2M———————7M——————————17M————————————剩余
-	  bootloader             linux内核     roofts（/）
+	  bootloader                linux内核         roofts（/）
 	    定死的
 	注意：分区大小可以自己定
 
@@ -145,7 +145,8 @@
 	  然后将linux kernel 从Nand上读到内存上（将内核加载到内存中）
 	  最后从内存中启动linux kernel
 	  最后最后给linux kernel传递启动参数，告诉linux kernel，rootfs所在位置
-	3.linux kernel启动，最后到Nand上某个位置去挂接rootfs根文件系统，一旦挂接成功启动rootfs根文件系统的第一个进程/sbin/init
+	3.linux kernel启动，最后到Nand上某个位置去挂接rootfs根文件系统，
+	  一旦挂接成功启动rootfs根文件系统的第一个进程/sbin/init
 	4./sbin/init进程创建一个子进程，子进程调用sh程序（shell）
 	  接下来用户即可输入linux命令
 	  至此整个嵌入式linux系统启动完毕！
