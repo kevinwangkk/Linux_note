@@ -117,7 +117,7 @@
            bin sbin usr linuxrc
          重要结论：生成的各种命令都是软链接文件,最终都链接到
          bin/busybox,所以说编译busybox源码最终生成的二进制
-         文件只有一个：bin/busybox         	
+         文件只有一个：bin/busybox    
 
 
 3.4.交叉编译和安装busybox
@@ -140,7 +140,7 @@
 
 3.6.添加应用程序（bin/busybox）所需的动态库
     明确：动态库在哪里
-	  动态库在交叉编译器中
+	  动态库在交叉编译器中         		(在交叉编译器中找动态库)
           动态库的命名：lib名.so.....
 
     添加原则：应用程序需要哪些动态库就添加对应的动态库即可
@@ -454,6 +454,7 @@
     cat /proc/cmdline //查看内核启动参数,确保是从Nand启动
     mkdir zhangsan //成功
     ps //查看自启动的应用程序的pid
+    
     kill 程序的pid  
 
 面试题：谈谈对嵌入式linux系统软件的认识

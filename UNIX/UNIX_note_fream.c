@@ -499,15 +499,57 @@
 
 	day01 
 			NFS
+			//交叉编译器
+			sudo apt-get install vim  //vim
+			sudo apt-get install minicom kermit //串口工具
+			sudo apt-get install tftpd-hpa      //tftp网络服务 电脑向板子传输文件
+			sudo apt-get install nfs-kernel-server //nfs网络服务 板子使用电脑中的内核或rootfs
+
+			tftp
+			配置服务器 tftpd-hpa
+			1 # /etc/default/tftpd-hpa
+			2 
+			3 TFTP_USERNAME="tftp"
+			4 TFTP_DIRECTORY="/tftpboot"       //配置文件目录 下载文件放在此目录
+			5 TFTP_ADDRESS="0.0.0.0:69"
+			6 TFTP_OPTIONS="--secure"
+			
 	day02 
+			bootcmd:   //挂接内核位置参数
+  			bootargs: //挂接rootfs位置参数
+  			
 			uboot
+				必要硬件初始化
+					CPU初始化
+					关闭看门狗
+					关闭中断
+					初始化系统时钟
+					初始化UART
+					初始化闪存
+					初始化内存
+			
 	day03
-			bootloader kernel
+			bootloader 
+	
+				uboot中添加命令实现LED 控制 加.c文件 修改makefile
+					添加开机动画 需要在uboot中初始化显示屏驱动
+			
+			kernel
+
+				make distclean
+				make ABC_defconfig
+				make zImage
+				编译后zImage所在
+				ls arch/arm/boot/zImage
+				
 	day04
 			将自己写的驱动加载到 make menuconfig 中的方法
 
-			静态编译内核
-			模块化编译内核
+			menuconfig 中的相关设置  
+			menuconfig 中添加新菜单 关联驱动
+
+			静态编译内核 (修改menuconfig)
+			模块化编译内核 (修改menuconfig)
 			insmod led_drv.ko //安装驱动到内核中,insmod = insert module
 			./led_test on 1
 			./led_test on 2
@@ -516,13 +558,17 @@
   
 			rmmod led_drv //从内核中卸载LED驱动
 
+
 			rootfs
 
 			利用busybox制作rootfs
 	day5
 			制作的rootfs需要的动态库，配置文件，启动文件，脚本rcS
-			文件系统格式
 
+			如何实现应用程序的自启动 用rcS脚本
+
+			文件系统格式  
+			文件系统做成镜像文件写入nand中
 
 /* 常用命令 */
 	tar -jcvf xxx.tar.bz2 xxx  压缩
