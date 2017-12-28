@@ -4,7 +4,7 @@
 
  	通过file指针获取inode 获取设备号
 	struct inode *inode = file->f_path.dentry->d_inode;
-	int minor = MINOR(inode->i_rdev);	
+	int minor = MINOR(inode->i_rdev);
 		
 	混杂设备 #include<linux/miscdevice.h>  两个配套函数 一个结构体
 
@@ -85,7 +85,9 @@ sp 文件名 //上下分屏
 	         例如：
 			#define LED_ON  (0x100001)
 			#define LED_OFF (0x100002)
-	...：如该应用程序要传递第三个参数，第三个参数要传递用户缓冲去的首地址，将来底层驱动可以访问这个用户缓冲区的首地址，同样底层驱动不能直接访问，需要利用内存拷贝函数
+	...：如该应用程序要传递第三个参数，第三个参数要传递用户缓冲去的首地址，
+	     将来底层驱动可以访问这个用户缓冲区的首地址，同样底层驱动不能直接访问，
+	     需要利用内存拷贝函数
 
 	回忆C编程：
   	int a = 0x12345678;
@@ -329,7 +331,7 @@ sp 文件名 //上下分屏
     		驱动创建设备文件 
   	     3. 保证根文件系统rootfs必须有etc/fstab文件,文件内容如下：
     		 proc           /proc        proc   defaults 0 0
-   		 sysfs          /sys         sysfs  defaults 0 0
+   		     sysfs          /sys         sysfs  defaults 0 0
     		将/proc,/sys目录分别作为procfs,sysfs两种虚拟文件系统
     		的入口,这两个目录下的内容都是内核自己创建,创建的内容
     		存在于内存中

@@ -19,7 +19,8 @@
 
 	day10 指针 指针数组 const关键字  字符串 字符字面值 字符数组
 
-	day11 string类函数 atoi() atof() fget()
+	day11 string类函数 strtoul()字符串转成无符号长整形 
+	      atoi() atof() fget()
 
 	day12 预处理 条件编译 多文件编程 extern关键字
 
@@ -548,6 +549,7 @@
 			menuconfig 中的相关设置  
 			menuconfig 中添加新菜单 关联驱动
 
+			//将驱动放到内核中 需修改menuconfig (和kernel融为一体)
 			静态编译内核 (修改menuconfig)
 			模块化编译内核 (修改menuconfig)
 			insmod led_drv.ko //安装驱动到内核中,insmod = insert module
@@ -565,10 +567,52 @@
 	day5
 			制作的rootfs需要的动态库，配置文件，启动文件，脚本rcS
 
-			如何实现应用程序的自启动 用rcS脚本
+			如何实现应用程序的自启动 -- 用rcS脚本
 
-			文件系统格式  
+			文件系统格式   
 			文件系统做成镜像文件写入nand中
+
+/* DRIVER NOTE FREAM */
+
+	day01 
+		用户空间
+		内核空间
+
+		模块化编译驱动 (驱动文件与kernel 分离)
+
+		内核程序的命令行传参 (驱动命令行传参)
+
+		内核程序多文件的调用实现过程 (内核符号导出 
+									需要显式的进行符号(函数名或者变量名)的导出)
+
+	day02
+		设置printk的打印输出级别
+
+		linux内核GPIO操作库函数
+
+		结构体标记初始化
+
+		*** linux系统的系统调用实现原理 (如 open write从用户到内核过程)
+
+		设备文件 (字符设备文件和块设备文件)
+
+		主设备号 次设备号
+			利用申请设备号 和 硬件接口(open write) 完成驱动程序
+
+	day03
+		主设备号 次设备号
+			利用申请设备号 和 硬件接口(open write) 完成驱动程序
+			write -  copy_from_user() 
+			read  -  copy_to_user()
+
+		设备文件手动创建
+		mknod /dev/设备文件名 C 主设备号 次设备号
+
+	day04
+		驱动操作接口 ioctl()
+
+
+			
 
 /* 常用命令 */
 	tar -jcvf xxx.tar.bz2 xxx  压缩
@@ -580,6 +624,10 @@
 	rm *.gch			//删除所有 .gch文件  
 					//.gch 就是.h只进行预处理和编译不链接所产生的文件
 
-	
+	vim分屏显示：
+		进入vim的命令行模式输入：
+		vs 文件名 //左右分屏
+		sp 文件名 //上下分屏
+		屏幕切换：ctrl+ww   
 
 

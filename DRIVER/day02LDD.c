@@ -1,5 +1,9 @@
-﻿关键字：printk打印输出级别 能提高内核启动速度   
-       	内核为GPIO提供的库函数  #include <asm/gpio.h>  #include <plat/gpio-cfg.h>
+﻿关键字：printk打印输出级别 能提高内核启动速度  
+	
+       	内核为GPIO提供的库函数
+			#include <asm/gpio.h> 
+			#include <plat/gpio-cfg.h>
+
 	系统调用实现原理
 	一切皆文件  设备文件 
 	主，次设备号
@@ -305,6 +309,7 @@ wine sourceinsight
   		.c = 300
   	}; //不用全部初始化,还可以不用按照顺序
 
+*****************************************************************
 
 4. linux系统的系统调用实现原理
    面试题：谈谈linux系统调用

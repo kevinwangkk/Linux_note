@@ -202,7 +202,7 @@ int strcmp(const char *cs, const char *ct)
 		    }
 		    
 		    //3.申请设备号
-		    alloc_chrdev_region(&dev, 0, 1, "LED_DOUBLE");
+		    alloc_chrdev_region(&dev, 0, 1, "tarena");
 
 		    //4.初始化字符设备对象
 		    //给字符设备对象添加硬件操作接口
@@ -401,7 +401,7 @@ int strcmp(const char *cs, const char *ct)
 		    
 		    //3.将数据最终写入到硬件数据寄存器
 		    for (i = 0; i < ARRAY_SIZE(led_info); i++)
-			gpio_set_value(led_info[i].gpio, kcmd);
+				gpio_set_value(led_info[i].gpio, kcmd);
 
 		    printk("%s\n", __func__);
 		    return count; //返回实际写入的字节数
@@ -498,9 +498,9 @@ int strcmp(const char *cs, const char *ct)
 		    }
 
 		    if (!strcmp(argv[1], "on")) 
-			ucmd = 1;
+				ucmd = 1;
 		    else if (!strcmp(argv[1], "off"))
-			ucmd = 0;
+				ucmd = 0;
 		    
 		    //应用write->软中断->内核sys_write->驱动led_write
 		    write(fd, &ucmd, 4);

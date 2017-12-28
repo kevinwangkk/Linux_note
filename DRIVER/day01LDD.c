@@ -161,7 +161,7 @@
       #执行命令make all或者make,执行对应的命令make -C ...
       all:
       	make -C /opt/kernel SUBDIRS=$(PWD) modules  
- 注释： #make -C /opt/kernel=cd /opt/kernel && make
+ 注释： #make -C /opt/kernel = cd /opt/kernel && make
         #SUBDIRS=/opt/drivers/day01/1.0,告诉内核源码,在内核源码之外还有一个目录作为子目录
         #modules：对1.0这个子目录下的内核程序采用模块化编译
     clean：
@@ -225,7 +225,7 @@
 	  module_param（name，type，perm）
 	  name：接收参数的内核全局变量名
 	  type：变量的数据类型：
-	       驱动中
+	   驱动中
 		bool  invbool
 		short  ushort
 		int  uint
@@ -283,7 +283,7 @@
    linux系统调试宏：
    __FILE__
    __LINE__
-   __FUNCITION__/
+   __FUNCITION__
    __func__
    __DATE__
    __TIME__
