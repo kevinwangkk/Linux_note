@@ -131,7 +131,7 @@
 	      {
 	      	unsigned long flags;
 	      	//屏蔽中断
-		local_irq_save(flags);
+			local_irq_save(flags);
 		
 		//临界区
 	      	if (--open_cnt !=0 ){

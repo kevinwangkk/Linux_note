@@ -527,7 +527,7 @@ led_test.c
 			.read
 			.write
 			.release
-    			.unlocked_ioctl
+    		.unlocked_ioctl
 		3. 多个硬件个体都有对应的设备文件
 		4. 驱动通过次设备号区分，次设备号的个数和硬件个数的数据一致
 			
