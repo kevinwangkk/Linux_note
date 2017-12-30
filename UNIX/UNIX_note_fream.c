@@ -621,6 +621,8 @@
 		混杂设备驱动
 
 	day05
+1. linux内核中断编程
+
 		linux内核中断编程
 			request_irq()向内核添加注册一个外设的中断处理函数
 			free_irq()删除中断处理函数
@@ -652,6 +654,8 @@
 
 			软中断代码的实现过程不能采用insmod/rmmod动态加载和卸载
     			只能静态编译到内核中(zImage,在一起),不便于代码的维护
+    			
+2. linux内核软件定时器
 
 		linux内核软件定时器
 			内核软件定时器对应的超时处理函数不能进行休眠操作
@@ -663,6 +667,9 @@
 		linux内核并发和竞态
 
 	day07
+	
+3. linux内核并发和竞态
+
 		linux内核并发和竞态
 			linux内核中形成竞态的4种情形
 			
@@ -677,12 +684,37 @@
 					local_irq_restore(flags);
 
 				自旋锁
+					spin_lock(&lock);
+					spin_unlock(&lock);
+					
 				衍生自旋锁
-
+					spin_lock_irqsave(&lock,flags); 
+					spin_unlock_irqrestore(&lock,flags);
+					
 		linux内核解决竞态方法之信号量 (信号量又称睡眠锁，本身基于自旋锁扩展而来)
+			down(&sema);
+			up(&sema); 
 			
 		原子操作
+			两类:位原子操作和整形原子操作
 
+	day08
+		linux内核等待队列机制
+
+		
+	day09
+
+
+
+
+	day10
+
+
+
+	day11
+
+
+		
 /* 常用命令 */
 	tar -jcvf xxx.tar.bz2 xxx  压缩
 	tar -jxvf xxx.tar.bz2	  解压
@@ -698,5 +730,10 @@
 		vs 文件名 //左右分屏
 		sp 文件名 //上下分屏
 		屏幕切换：ctrl+ww   
+
+/* 3个位操作 */
+	a &= ~(1<<n)  清0
+	a |= (1<<n)   置1
+	a ^= (1<<n)   取反 (异或 相异出1)
 
 
