@@ -245,7 +245,7 @@
 	...
     };    
     作用：描述I2C外设的软件信息
-    id_table:I2C外设的标识,其中的name用于匹配
+    	id_table:I2C外设的标识,其中的name用于匹配
     	struct i2c_device_id {
     		char name[I2C_NAME_SIZE];//用于匹配
     		unsigned long data; //给probe函数传递的参数
@@ -417,7 +417,7 @@ at24c02_drv.c
 	//写数据到EEPROM中
 	/*
 	 *           addr,data
-	    app:ioctl--------->  //应用成
+	    app:ioctl--------->  //应用层
 		             addr,data
 		at24c02_ioctl----------> //I2C设备驱动层
 		                  addr,data

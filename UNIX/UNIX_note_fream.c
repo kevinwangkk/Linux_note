@@ -741,12 +741,19 @@
 7. mmap函数 (外设的物理地址映射到用户空间的虚拟地址上)
 		例子 (很好)
 
-8. linux内核分离思想
+8. linux内核分离思想 (不熟悉)
 		linux内核分离思想的实现基于platform机制
 
 
 	day11
 
+		platform实例
+
+		IIC总线
+
+	day12
+		linux内核 IIC驱动开发
+			
 
 		
 /* 常用命令 */
@@ -764,6 +771,11 @@
 		vs 文件名 //左右分屏
 		sp 文件名 //上下分屏
 		屏幕切换：ctrl+ww   
+
+练习find打包操作：
+/home/driver/一堆的.ko文件
+find /home/drivers/ \( -name "*.ko" \) -exec insmod {} \;   //insmod所有.ko文件
+
 
 /* 3个位操作 */
 	a &= ~(1<<n)  清0
