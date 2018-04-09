@@ -12,6 +12,8 @@
 							fflush(stdout);
 
 	day7 数组 array 多维数组
+			可以对数组名称做sizeof计算，计算结果是数组里所有存储区的总大小
+			二维数组名称也可以做sizeof计算，结果是二维数组里所有存储区的总大小
 
 	day8 函数 volatile 行参 实参 数组形参 可变长函数参数(内容不足)
 
@@ -26,7 +28,7 @@
 
 	day13 typedef 结构体 结构体指针做形参 对齐 补齐
 
-	day14 enum union 二级指针 函数指针 回调函数 malloc() free()
+	day14 enum union 二级指针 函数指针 回调函数 malloc() free()  内存拷贝作业题
 
 	day15 文件操作系列函数 文件指针
 
@@ -53,11 +55,13 @@
 
 1. Unix/Linux系统的概述以及编程基础；
 
-	day23  manual gcc(编译命令) 　头文件的详细组成 (1)头文件卫士(2)其他头文件(3)宏定义(4)结构体(5)外部变量和函数声明
+	day23  manual gcc(编译命令) gcc/cc -g 生成调试信息，可以生成GDB调试 　
+			头文件的详细组成 (1)头文件卫士(2)其他头文件(3)宏定义(4)结构体(5)外部变量和函数声明
 
-	day24  常用预处理宏指令　 环境变量 export PATH 　查找头文件 whereis stdio.h
+	day24  常用预处理宏指令　 环境变量 export PATH 　查找头文件 whereis stdio.h 头文件路径查找方法
 
-	day25  静态库 共享库         共享库的动态加载 4个函数            #include<dlfcn.h> dlopen()/dlsym()/dlclose()/dlerror()
+	day25  静态库.a 共享库.so 
+			共享库的动态加载 4个函数            #include<dlfcn.h> dlopen()/dlsym()/dlclose()/dlerror()
 
 	day26  错误处理      #include<errno.h> strerror()/perror()重要
 		   环境表相关函数 #include<stdlib.h> getenv()/setenv()/putenv()/clearenv()
@@ -93,6 +97,7 @@
 			2. 使用lseek函数调整文件读写位置到末尾，返回值就是文件大小；
 			
 	day29  标C和UC文件操作函数的效率  
+	
 		   文件描述符工作原理
 		   #include <unistd.h>  dup()/dup2()  //复制文件描述符
 		   
@@ -101,6 +106,7 @@
     		#include <fcntl.h>
 			fcntl()  //manipulate file descriptor  实现文件锁(重点) 　复制文件描述符
 					在读写操作的时候，附带加锁操作，根据能否进行加锁成功决定是否读写操作；
+					*多进程同一文件有写操作时 要加锁.
 
 			#include <unistd.h>
 			access()  //检查文件的存在性及是否拥有相应权限
@@ -153,6 +159,8 @@
 			getppid() //获取当前进程父进程的进程号 parent
 			getuid()  //获取当前用户的编号 user
 			getgid()  //获取当前用户的用户组编号 group
+
+			递归打印目录以及子目录
 
 	day32  进程创建
 			#include <unistd.h>
@@ -286,7 +294,7 @@
 
 	day35  进程间通信
 
-			管道
+		管道
 			管道本质上就是文件，只是一种比较特殊的文件
 			管道分为两种：有名管道 和 无名管道
 			有名管道 - 可以用于任意两个进程间的通信；
@@ -301,7 +309,7 @@
 			#include <unistd.h>
 			int pipe(int pipefd[2]); //创建无名管道
 
-			共享内存
+		共享内存
 			共享内存本质就是一块由系统内核维护的内存空间，而该内存空间可以共享在两个进程之间，
 			两个进程通过读写该内存区域从而实现通信；
 			最快的IPC通信方式
@@ -318,7 +326,7 @@
 			#include <sys/ipc.h>
 			#include <sys/shm.h>   //shared memory  
 
-			消息队列
+		消息队列
 			将通信的数据打包成消息，使用两个不同的进程分别发送消息到消息队列中 和 接收消息队列中的消息，从而实现通信；
 
 			/*通信的模型*/
@@ -424,7 +432,8 @@
 8. Uinx/Linux系统下的多线程开发技术；
 
 	day39 多线程
-			目前主流的操作系统支持多进程，而每一个进程的内部又可以支持多线程，也就是说线程隶属于进程内部的程序流，同一个进程中的多个线程并行处理；
+			目前主流的操作系统支持多进程，而每一个进程的内部又可以支持多线程，
+				也就是说线程隶属于进程内部的程序流，同一个进程中的多个线程并行处理；
 
 			进程是重量级的，/*每个进程都需要独立的内存空间*/，因此新建进程对于资源的消耗比较大;
 			而线程是轻量级的，/*新建线程会共享所在进程的内存资源，但是每个线程都拥有一块独立的栈区*/；
@@ -765,6 +774,8 @@
 	mv arr_stack.c main.c		//重命名 把arr_stack.c重命名为main.c
 	rm *.gch			//删除所有 .gch文件  
 					//.gch 就是.h只进行预处理和编译不链接所产生的文件
+
+	tree -a  生成目录树 递归到子目录
 
 	vim分屏显示：
 		进入vim的命令行模式输入：

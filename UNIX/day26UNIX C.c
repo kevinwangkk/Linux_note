@@ -244,7 +244,8 @@ int main()
 	第一个参数：字符串形式的环境变量名
 	第二个参数：字符串形式的环境变量值
 	第三个参数：是否修改的标志
-			非0 - 修改   0 - 不修改
+			非0 - 修改   
+			0 - 不修改
 	返回值：The setenv() function returns zero on success,or -1 on error,with errno set to indicate the cause of the error.
 
 函数功能：

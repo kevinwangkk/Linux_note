@@ -110,7 +110,7 @@ volatile unsigned char i;
 #include<stdio.h>
 #include<stdlib.h>
 #include<time.h>
-void lottery();
+static void lottery();
 int main()
 {
     int arr[7]={0},i=0;

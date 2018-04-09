@@ -169,7 +169,7 @@
 	0----------1M———-----——2M—————---5M—————-----10M————------剩余
 	   uboot       隐藏        logo       zImage      rootfs
 	分区名称：
-	 mtdblock0		 mtdblock1  mtdblock2    mtdblock3
+	 mtdblock0              mtdblock1  mtdblock2    mtdblock3
 
 	5.利用tftp烧写
 	  1. 重启开发板，进入uboot命令行模式
@@ -321,7 +321,7 @@
            这样就无需对Nand进行读操作(nand read)
      setenv bootargs root=/dev/nfs nfsroot=192.168.1.8:/nfs/rootfs ip=192.168.1.110:192.168.1.8:192.168.1.1:255.255.255.0::eth0:on init=/linuxrc console=ttySAC0,115200
      说明：
-     nfsroot=192.168.1.8:/opt/rootfs:告诉内核,挂机的rootfs在linux虚拟机的/opt/rootfs
+     nfsroot=192.168.1.8:/nfs/rootfs:告诉内核,挂载的rootfs在linux虚拟机的/nfs/rootfs
                    而不再是Nand的第三分区或者第四分区
      ip=开发板ip:linux虚拟机ip:网关:子网掩码::开发板网卡名:打开
      
@@ -337,8 +337,75 @@
      总结：此过程无需对Nand进行烧写内核和rootfs,也照样能够
            调试应用程序          
            
-           将来只要在linux虚拟机的/opt/rootfs编辑和编译自己的
+           将来只要在linux虚拟机的/nfs/rootfs编辑和编译自己的
            UC源代码,最后在开发板上运行即可！
            如果helloworld调试测试完成,最终还是要烧写到Nand
-      
+
+
+/* tftp */
+			  通过网络方式把PC上的文件传到开发板内存
+			  tftp方式传输，需要tftp服务器，需要一个tftp客户端
+			  在我们的开发方式中谁作为服务器？谁作为客户端？
+				电脑（开发主机）作为服务器，需要tftp服务器软件
+				开发板端需要一个tftp客户端，u-boot的tftp命令
+				
+				u-boot 的tftp命令如何使用？
+				tftp 下载地址	下载的文件名
+				
+					 下载地址是开发板的内存地址
+						把下载的文件存到开发板什么位置
+					 下载的文件名
+						把服务器上的文件下载到开发板
+						这个文件应该在tftp服务器端存在
+						
+				tftp  0x20008000  u-boot.bin
+				
+					 把tftp服务器上的u-boot.bin下载到
+					 开发板内存中，内存地址是0x20008000
+					 
+			   为了使用tftp命令下载需要
+				  1、pc端需要安装tftp服务器，配置服务器
+					 tftpd-hpa
+					 sudo apt-get install tftpd-hpa
+					 
+					 配置 /etc/default/tftpd-hpa
+					 
+				  2、启用tftp服务器
+		   
+					 sudo /etc/init.d/tftpd-hpa  restart 
+					 
+				  3、使用u-boot的tftp命令下载服务器上的文件
+					 到开发板内存。
+					 需要保证网络是连同。
+					 需要对网络做一个配置
+					 如果ping不通：
+					   1、网线
+					   2、pc端网口
+					   3、开发板端的网口
+					   4、可以尝试关闭pc端防火墙
+				 4、把u-boot.bin放到ubuntu的 tftp 服务器目录中
+					 /tftpboot
+					 
+					 tftp 20008000 u-boot.bin
+		
+		1.ubuntn ip  与 serverip 一致
+		2.两个桥接
+			1.VM->Settings->Network Adapter->Network connection->Bridged
+			2.Edit->Virtual Network Editor ->Bridged to->选择与开发板连接的网卡
+		
+			用dnw 输入 ping 192.168.1.8（serverip） 检查是否连通
+		
+		3.配置服务器 tftpd-hpa
+		
+			  1 # /etc/default/tftpd-hpa
+			  2 
+			  3 TFTP_USERNAME="tftp"
+			  4 TFTP_DIRECTORY="/tftpboot"		 //配置文件目录 下载文件放在此目录
+			  5 TFTP_ADDRESS="0.0.0.0:69"
+			  6 TFTP_OPTIONS="--secure"
+		
+			
+		4.一个启用tftp服务器指令
+		
+			sudo /etc/init.d/tftpd-hpa	restart
 

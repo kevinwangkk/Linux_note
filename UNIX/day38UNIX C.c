@@ -1,4 +1,4 @@
-关键字：tcp/ip  udp/ip
+关键字：tcp/ip     udp/ip
 	基于tcp协议的通信模型
 	tcp协议和udp协议的比较
 	基于udp协议的通信模型
@@ -33,7 +33,8 @@
 		（也就是已经发送连接请求，但没有来得及响应的最大数量）
 
 函数功能：
-	主要用于监听指定socket上的连接请求，当调用该函数后，该函数会将sockfd所指向的socket标记为被动socket，所谓的被动socket就是专门用于使用accept函数接收即将到来的连接请求，也就是不能用来通信了；
+	主要用于监听指定socket上的连接请求，当调用该函数后，该函数会将sockfd所指向的socket标记为被动socket，
+		所谓的被动socket就是专门用于使用accept函数接收即将到来的连接请求，也就是不能用来通信了；
 
 
 2. accept()函数			accept a connection on a socket
@@ -51,7 +52,8 @@
 返回值：成功返回用于通信的socket描述，失败返回-1；
 
 函数功能:
-	主要用于提取listen函数标记的socket中，未决定的队列中的第一个连接请求处理，创建一个新的socket用于和接收的客户端进行通信，该socket并不会处于监听的状态；
+	主要用于提取listen函数标记的socket中，未决定的队列中的第一个连接请求处理，
+		创建一个新的socket用于和接收的客户端进行通信，该socket并不会处于监听的状态；
 
 
 3. send()函数			send a message on a socket
@@ -559,7 +561,8 @@ udp协议的概念和特性
 
 
 函数功能：
-	主要用于将指定的消息发送到指定的目标地址上，其中前四个参数以及返回值和send函数完全一致，第五个参数用于指定收件人的通信地址信息，第六个参数用于指定通信地址的大小；
+	主要用于将指定的消息发送到指定的目标地址上，其中前四个参数以及返回值和send函数完全一致，
+		第五个参数用于指定收件人的通信地址信息，第六个参数用于指定通信地址的大小；
 
 
 2. recvfrom()函数			receive a message from a socket
@@ -570,7 +573,8 @@ udp协议的概念和特性
                         struct sockaddr *src_addr, socklen_t *addrlen);
 
 函数功能：
-	主要用于接收发来的消息，并保存消息发送方的通信地址，其中前四个参数以及返回值和recv函数完全一致，第五个参数用于保存消息发送方的通信地址，第六个参数用于保存通信地址的大小;
+	主要用于接收发来的消息，并保存消息发送方的通信地址，其中前四个参数以及返回值和recv函数完全一致，
+		第五个参数用于保存消息发送方的通信地址，第六个参数用于保存通信地址的大小;
 
 //基于udp协议的通信模型  接收数据  服务器
 #include<stdio.h>
@@ -672,7 +676,7 @@ int main()
 	printf("请发送消息：\n");
 	scanf("%s",buf);
 	//int res= send(sockfd,buf,strlen(buf)+1,0);
-	int res= sendto(sockfd,buf,strlen(buf)+1,0,(struct sockaddr*)&addr,sizeof(addr));				    //向服务器地址172.16.1.182发信息
+	int res= sendto(sockfd,buf,strlen(buf)+1,0,(struct sockaddr*)&addr,sizeof(addr));//向服务器地址172.16.1.182发信息
 	if(-1==res)
 	{
 		perror("sendto"),exit(-1);

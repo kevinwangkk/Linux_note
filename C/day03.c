@@ -91,7 +91,7 @@ sizeof 关键字可以用来计算一个存储区类型里包含的字节个数
 *sizeof关键字后面的小括号里对任何存储区内容的修改不会真正生效
 	/* sizeof(num=10); 之后的语句num没有被改为10 */
 
-char 和 unsigned char	  1个字节
+char 和 unsigned char	  1个字节(1个字节=8bit)
 short 和 unsigned short   2个字节
 long 和 unsigned long 	  4个字节
 int 和 unsigned int	  4个字节

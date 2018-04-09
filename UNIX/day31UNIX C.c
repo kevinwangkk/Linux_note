@@ -1,9 +1,9 @@
-关键字:	文件管理：chmod/fchmod  truncate/ftruncate  umask  mmap/munmap
+关键字:	文件管理：chmod/fchmod truncate/ftruncate  umask    mmap/munmap
 	目录管理：opendir/readdir/closedir
 	进程管理
 
 /*文件管理*/
-1.1 chmod/fchmod函数	change permissions of a file
+1.1 chmod/fchmod函数 change permissions of a file
        	#include <sys/stat.h>
 	int chmod(const char *path, mode_t mode);
 	int fchmod(int fd, mode_t mode);
@@ -134,7 +134,8 @@ int main(void)
        	void *mmap(void *addr, size_t length, int prot, int flags,int fd, off_t offset)；
        	int munmap(void *addr, size_t length);
 
-通过建立文件到虚拟地址的映射，可以将对文件的读写操作转换为对内存地址的读写操作，只需要简单的赋值操作就可以将数据写入到文件中，因此又多了一种读写文件的方式
+通过建立文件到虚拟地址的映射，可以将对文件的读写操作转换为对内存地址的读写操作，
+	只需要简单的赋值操作就可以将数据写入到文件中，因此又多了一种读写文件的方式
 
        The prot argument describes the desired memory protection of  the  map‐
        ping  (and  must  not  conflict with the open mode of the file).  It is
@@ -315,7 +316,7 @@ int main(void)
 
 /*目录管理*/
 常用的基本操作函数
-1. opendir函数	open a directory	       
+1. opendir函数	open a directory  
 	#include <sys/types.h>
        	#include <dirent.h>
        	DIR *opendir(const char *name);
@@ -348,8 +349,8 @@ DESCRIPTION
 
 
 3. closedir函数	 close a directory	
-       	#include <sys/types.h>
-	#include <dirent.h>
+		#include <sys/types.h>
+		#include <dirent.h>
 	int closedir(DIR *dirp);
 
 函数功能：

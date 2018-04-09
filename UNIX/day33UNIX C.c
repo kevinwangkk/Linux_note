@@ -19,19 +19,19 @@
 基本命令和分类
 	kill -l  表示显示当前系统所支持的所有信号
 
- 1) SIGHUP	 2) SIGINT	 3) SIGQUIT	 4) SIGILL	 5) SIGTRAP
- 6) SIGABRT	 7) SIGBUS	 8) SIGFPE	 9) SIGKILL	10) SIGUSR1
-11) SIGSEGV	12) SIGUSR2	13) SIGPIPE	14) SIGALRM	15) SIGTERM
-16) SIGSTKFLT	17) SIGCHLD	18) SIGCONT	19) SIGSTOP	20) SIGTSTP
-21) SIGTTIN	22) SIGTTOU	23) SIGURG	24) SIGXCPU	25) SIGXFSZ
-26) SIGVTALRM	27) SIGPROF	28) SIGWINCH	29) SIGIO	30) SIGPWR
-31) SIGSYS	34) SIGRTMIN	35) SIGRTMIN+1	36) SIGRTMIN+2	37) SIGRTMIN+3
-38) SIGRTMIN+4	39) SIGRTMIN+5	40) SIGRTMIN+6	41) SIGRTMIN+7	42) SIGRTMIN+8
-43) SIGRTMIN+9	44) SIGRTMIN+10	45) SIGRTMIN+11	46) SIGRTMIN+12	47) SIGRTMIN+13
-48) SIGRTMIN+14	49) SIGRTMIN+15	50) SIGRTMAX-14	51) SIGRTMAX-13	52) SIGRTMAX-12
-53) SIGRTMAX-11	54) SIGRTMAX-10	55) SIGRTMAX-9	56) SIGRTMAX-8	57) SIGRTMAX-7
-58) SIGRTMAX-6	59) SIGRTMAX-5	60) SIGRTMAX-4	61) SIGRTMAX-3	62) SIGRTMAX-2
-63) SIGRTMAX-1	64) SIGRTMAX	
+ 1) SIGHUP        2) SIGINT        3) SIGQUIT       4) SIGILL        5) SIGTRAP
+ 6) SIGABRT       7) SIGBUS        8) SIGFPE        9) SIGKILL      10) SIGUSR1
+11) SIGSEGV      12) SIGUSR2      13) SIGPIPE      14) SIGALRM      15) SIGTERM
+16) SIGSTKFLT    17) SIGCHLD      18) SIGCONT      19) SIGSTOP      20) SIGTSTP
+21) SIGTTIN      22) SIGTTOU      23) SIGURG       24) SIGXCPU      25) SIGXFSZ
+26) SIGVTALRM    27) SIGPROF      28) SIGWINCH     29) SIGIO        30) SIGPWR
+31) SIGSYS       34) SIGRTMIN     35) SIGRTMIN+1   36) SIGRTMIN+2   37) SIGRTMIN+3
+38) SIGRTMIN+4   39) SIGRTMIN+5   40) SIGRTMIN+6   41) SIGRTMIN+7   42) SIGRTMIN+8
+43) SIGRTMIN+9   44) SIGRTMIN+10  45) SIGRTMIN+11  46) SIGRTMIN+12  47) SIGRTMIN+13
+48) SIGRTMIN+14  49) SIGRTMIN+15  50) SIGRTMAX-14  51) SIGRTMAX-13  52) SIGRTMAX-12
+53) SIGRTMAX-11  54) SIGRTMAX-10  55) SIGRTMAX-9   56) SIGRTMAX-8   57) SIGRTMAX-7
+58) SIGRTMAX-6   59) SIGRTMAX-5   60) SIGRTMAX-4   61) SIGRTMAX-3   62) SIGRTMAX-2
+63) SIGRTMAX-1   64) SIGRTMAX
 
 	在linux系统中支持的信号范围是1～64，不保证连续，
 	其中1～31之间的信号叫做不可靠信号，不支持排队，信号可能会丢失，也叫做非实时信号；
@@ -73,7 +73,7 @@ signal()函数 		ANSI C signal handling
 signal是一个函数
 	具有两个参数：一个参数是int类型，另外一个是函数指针类型
 	返回值类型是函数指针类型
-	第二个参数：是一个指向参数为int类型，返回值为void类型的函数的指针；	
+	第二个参数：是一个指向参数为int类型，返回值为void类型的函数的指针；
 
 函数功能：
 	第一个参数：信号值/信号名称（表示对哪个信号处理）
@@ -125,7 +125,9 @@ int main()
 
 
 练习：
-	使用signal函数设置对信号2进行自定义处理，设置对信号3进行忽略处理，再使用fork函数创建子进程，打印子进程的进程号后，子进程进入无限循环，父进程直接结束，另起一个终端使用kill命令发送信号2 3 9给子进程，观察处理结果
+	使用signal函数设置对信号2进行自定义处理，设置对信号3进行忽略处理，
+	再使用fork函数创建子进程，打印子进程的进程号后，子进程进入无限循环，父进程直接结束，
+	另起一个终端使用kill命令发送信号2 3 9给子进程，观察处理结果
 
 #include<stdio.h>
 #include<stdlib.h>
@@ -171,8 +173,10 @@ int main()
 
 
 /*父子进程对信号的处理方式*/
-	1. 对于fork函数创建的子进程来说，子进程完全照搬父进程中对信号的处理方式，也就是父进程默认，子进程也默认；父进程忽略，子进程也忽略；父进程自定义处理，子进程也自定义处理；
-	2. 对于vfork()和execl()函数启动的子进程来说，父进程默认，子进程也默认；父进程忽略，子进程也忽略；/*父进程自定义，子进程采用默认*/；(自定义函数不受控，没有改变函数内的信号值，所以是默认)
+	1. 对于fork函数创建的子进程来说，子进程完全照搬父进程中对信号的处理方式，
+		也就是父进程默认，子进程也默认；父进程忽略，子进程也忽略；父进程自定义处理，子进程也自定义处理；
+	2. 对于vfork()和execl()函数启动的子进程来说，父进程默认，子进程也默认；父进程忽略，子进程也忽略；
+		/*父进程自定义，子进程采用默认*/；(自定义函数不受控，没有改变函数内的信号值，所以是默认)
 
 
 
@@ -309,7 +313,8 @@ int main()
        	unsigned int sleep(unsigned int seconds);
 
 函数功能：
-	用于使得当前正在调用的进程进入睡眠状态，当指定的秒数睡够了则返回0，当指定的秒数没有睡够但一个不能忽略的信号到来了，则返回剩余没有来得及睡的秒数；
+	用于使得当前正在调用的进程进入睡眠状态，当指定的秒数睡够了则返回0，
+		当指定的秒数没有睡够但一个不能忽略的信号到来了，则返回剩余没有来得及睡的秒数；
 	
 	Zero if the requested time has elapsed, or the number of seconds  left
         to sleep, if the call was interrupted by a signal handler.
