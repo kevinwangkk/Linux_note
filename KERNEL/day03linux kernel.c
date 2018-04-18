@@ -27,7 +27,7 @@
   先别尝试修改,先去编译
   make distclean
   make ABC_config
-  make	
+  make
   结果：u-boot.bin,尝试先运行
   找出参考板和自己的板卡之间的硬件差异(硬件工程师)
   例如：

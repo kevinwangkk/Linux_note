@@ -99,7 +99,7 @@
 		<*> The Extended 4 (ext4) filesystem
 
 		[*] Miscellaneous filesystems  --->
-			//支持yaff2文件系统格式（一般应用于Nandflash）
+			//支持yaffs2文件系统格式（一般应用于Nandflash）
 			<*>   YAFFS2 file system support
 
 			//支持jffs2（一般应用于NorFlash）

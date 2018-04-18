@@ -93,6 +93,7 @@ IP地址和子网掩码（重点）
 	
 	如：
 		小端系统：0x78 0x56 0x34 0x12 => 0x12 0x34 0x56 0x78
+		
 	   当数据接收方为小端系统时：
 	   	0x12 0x34 0x56 0x78 => 0x78 0x56 0x34 0x12 => 0x12345678
 	   当数据接收方为大端系统时：
@@ -133,7 +134,7 @@ int main(void){
 第一个参数：域/协议族，决定了是本地通信还是网络通信   AF（address family）
 
        Name                Purpose                          Man page
-       AF_UNIX, AF_LOCAL   Local communication              unix(7)	
+       AF_UNIX, AF_LOCAL   Local communication              unix(7)
 	本地通信（同一主机内的通信）
 
        AF_INET             IPv4 Internet protocols          ip(7)	
@@ -224,7 +225,7 @@ int main(void){
 
 5. 字节序的转换函数
        htonl,  htons,  ntohl, ntohs - convert values between host and network byte order
-							     主机       网络
+                                                             主机       网络
        #include <arpa/inet.h>
 
        uint32_t htonl(uint32_t hostlong);
@@ -261,7 +262,8 @@ int main(void){
 						  整数才是实际用到的网络地址
 
 
-/*网络通信 绑定自己的IP 服务器  		连接对方的IP 客户端
+/*网络通信 绑定自己的IP 服务器 
+           连接对方的IP 客户端
 	绑定时候只能是读	连接时候只能是写 
 	因为bind才会建立socket和通信地址间的联系  */
 	write: Destination address required
@@ -293,7 +295,7 @@ int main()
 //--------------------------------------------
 	struct sockaddr_un addr;
 	addr.sun_family=AF_UNIX;
-	strcpy(addr.sun_path,"a.sock");
+	strcpy(addr.sun_path,"a.sock");   //char sun_path[]; //socket文件的路径名 用strcpy
 //--------------------------------------------
 	int res=bind(sockfd,(struct sockaddr*)&addr,sizeof(addr));
 	if(-1==res)
@@ -390,7 +392,7 @@ int main()
 	//4.进行通信，使用read/write函数
 	//5.关闭socket，使用close函数
 
-	int sockfd=socket(AF_INET,SOCK_DGRAM,0);
+	int sockfd=socket(AF_INET/*IPV4*/,SOCK_DGRAM/*数据包*/,0);
 	if(-1==sockfd)
 	{
 		perror("socket"),exit(-1);
